@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="ivy-report.xsl"?>
+<ivy-report version="1.0">
+	<info
+		organisation="org.udc"
+		module="strath-graph_2.10"
+		revision="0.3.0"
+		conf="test"
+		confs="compile, runtime, test, provided, optional, compile-internal, runtime-internal, test-internal, plugin, sources, docs, pom, scala-tool"
+		date="20151029162359"/>
+	<dependencies>
+		<module organisation="junit" name="junit">
+			<revision name="4.11" status="release" pubdate="20121114202147" resolver="sbt-chain" artresolver="sbt-chain" homepage="http://junit.org" downloaded="false" searched="false" default="false" conf="default, compile, runtime, default(compile), master" position="11">
+				<license name="Common Public License Version 1.0" url="http://www.opensource.org/licenses/cpl1.0.txt"/>
+				<metadata-artifact status="no" details="" size="2771" time="0" location="/Users/davidmartinezrego/.ivy2/cache/junit/junit/ivy-4.11.xml" searched="false" origin-is-local="false" origin-location="https://repo1.maven.org/maven2/junit/junit/4.11/junit-4.11.pom"/>
+				<caller organisation="org.udc" name="strath-graph_2.10" conf="test, compile, runtime" rev="4.11" rev-constraint-default="4.11" rev-constraint-dynamic="4.11" callerrev="0.3.0"/>
+				<artifacts>
+					<artifact name="junit" type="jar" ext="jar" status="no" details="" size="245039" time="0" location="/Users/davidmartinezrego/.ivy2/cache/junit/junit/jars/junit-4.11.jar">
+						<origin-location is-local="false" location="https://repo1.maven.org/maven2/junit/junit/4.11/junit-4.11.jar"/>
+					</artifact>
+				</artifacts>
+			</revision>
+		</module>
+		<module organisation="org.hamcrest" name="hamcrest-core">
+			<revision name="1.3" status="release" pubdate="20120709230802" resolver="sbt-chain" artresolver="sbt-chain" homepage="" downloaded="false" searched="false" default="false" conf="compile, runtime(*), master(compile), runtime, compile(*), master" position="12">
+				<metadata-artifact status="no" details="" size="2397" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.hamcrest/hamcrest-core/ivy-1.3.xml" searched="false" origin-is-local="false" origin-location="http://repo1.maven.org/maven2/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.pom"/>
+				<caller organisation="junit" name="junit" conf="default, compile, runtime, master" rev="1.3" rev-constraint-default="1.3" rev-constraint-dynamic="1.3" callerrev="4.11"/>
+				<artifacts>
+					<artifact name="hamcrest-core" type="jar" ext="jar" status="no" details="" size="45024" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.hamcrest/hamcrest-core/jars/hamcrest-core-1.3.jar">
+						<origin-location is-local="false" location="http://repo1.maven.org/maven2/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"/>
+					</artifact>
+				</artifacts>
+			</revision>
+		</module>
+		<module organisation="org.scalatest" name="scalatest_2.10">
+			<revision name="2.0" status="release" pubdate="20131031161328" resolver="sbt-chain" artresolver="sbt-chain" homepage="http://www.scalatest.org" downloaded="false" searched="false" default="false" conf="default, compile, runtime, default(compile), master" position="9">
+				<license name="the Apache License, ASL Version 2.0" url="http://www.apache.org/licenses/LICENSE-2.0"/>
+				<metadata-artifact status="no" details="" size="6568" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.scalatest/scalatest_2.10/ivy-2.0.xml" searched="false" origin-is-local="false" origin-location="https://repo1.maven.org/maven2/org/scalatest/scalatest_2.10/2.0/scalatest_2.10-2.0.pom"/>
+				<caller organisation="org.udc" name="strath-graph_2.10" conf="test, compile, runtime" rev="2.0" rev-constraint-default="2.0" rev-constraint-dynamic="2.0" callerrev="0.3.0"/>
+				<artifacts>
+					<artifact name="scalatest_2.10" type="jar" ext="jar" status="no" details="" size="7158439" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.scalatest/scalatest_2.10/jars/scalatest_2.10-2.0.jar">
+						<origin-location is-local="false" location="https://repo1.maven.org/maven2/org/scalatest/scalatest_2.10/2.0/scalatest_2.10-2.0.jar"/>
+					</artifact>
+				</artifacts>
+			</revision>
+		</module>
+		<module organisation="org.scala-lang" name="scala-reflect">
+			<revision name="2.10.0" status="release" pubdate="20121220072932" resolver="sbt-chain" artresolver="sbt-chain" homepage="http://www.scala-lang.org/" downloaded="false" searched="false" default="false" conf="master(*), compile, runtime(*), runtime, compile(*), master" position="10">
+				<license name="BSD-like" url="http://www.scala-lang.org/downloads/license.html    "/>
+				<metadata-artifact status="no" details="" size="2552" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.scala-lang/scala-reflect/ivy-2.10.0.xml" searched="false" origin-is-local="false" origin-location="https://repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.10.0/scala-reflect-2.10.0.pom"/>
+				<caller organisation="org.scalatest" name="scalatest_2.10" conf="default, compile, runtime, master" rev="2.10.0" rev-constraint-default="2.10.0" rev-constraint-dynamic="2.10.0" callerrev="2.0"/>
+				<artifacts>
+					<artifact name="scala-reflect" type="jar" ext="jar" status="no" details="" size="3149351" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.scala-lang/scala-reflect/jars/scala-reflect-2.10.0.jar">
+						<origin-location is-local="false" location="https://repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.10.0/scala-reflect-2.10.0.jar"/>
+					</artifact>
+				</artifacts>
+			</revision>
+		</module>
+		<module organisation="org.hamcrest" name="hamcrest-all">
+			<revision name="1.3" status="release" pubdate="20120709221144" resolver="sbt-chain" artresolver="sbt-chain" homepage="" downloaded="false" searched="false" default="false" conf="default, compile, runtime, default(compile), master" position="8">
+				<metadata-artifact status="no" details="" size="2298" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.hamcrest/hamcrest-all/ivy-1.3.xml" searched="false" origin-is-local="false" origin-location="https://repo1.maven.org/maven2/org/hamcrest/hamcrest-all/1.3/hamcrest-all-1.3.pom"/>
+				<caller organisation="org.udc" name="strath-graph_2.10" conf="test, compile, runtime" rev="1.3" rev-constraint-default="1.3" rev-constraint-dynamic="1.3" callerrev="0.3.0"/>
+				<artifacts>
+					<artifact name="hamcrest-all" type="jar" ext="jar" status="no" details="" size="306578" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.hamcrest/hamcrest-all/jars/hamcrest-all-1.3.jar">
+						<origin-location is-local="false" location="https://repo1.maven.org/maven2/org/hamcrest/hamcrest-all/1.3/hamcrest-all-1.3.jar"/>
+					</artifact>
+				</artifacts>
+			</revision>
+		</module>
+		<module organisation="org.specs2" name="specs2_2.10">
+			<revision name="1.13" status="release" pubdate="20121220124856" resolver="sbt-chain" artresolver="sbt-chain" homepage="http://specs2.org/" downloaded="false" searched="false" default="false" conf="default, compile, runtime, default(compile), master" position="4">
+				<license name="MIT-style" url="http://www.opensource.org/licenses/mit-license.php"/>
+				<metadata-artifact status="no" details="" size="3576" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.specs2/specs2_2.10/ivy-1.13.xml" searched="false" origin-is-local="false" origin-location="https://repo1.maven.org/maven2/org/specs2/specs2_2.10/1.13/specs2_2.10-1.13.pom"/>
+				<caller organisation="org.udc" name="strath-graph_2.10" conf="test, compile, runtime" rev="1.13" rev-constraint-default="1.13" rev-constraint-dynamic="1.13" callerrev="0.3.0"/>
+				<artifacts>
+					<artifact name="specs2_2.10" type="jar" ext="jar" status="no" details="" size="6656378" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.specs2/specs2_2.10/jars/specs2_2.10-1.13.jar">
+						<origin-location is-local="false" location="https://repo1.maven.org/maven2/org/specs2/specs2_2.10/1.13/specs2_2.10-1.13.jar"/>
+					</artifact>
+				</artifacts>
+			</revision>
+		</module>
+		<module organisation="org.specs2" name="scalaz-concurrent_2.10">
+			<revision name="7.0.0" status="release" pubdate="20121220110510" resolver="sbt-chain" artresolver="sbt-chain" homepage="http://specs2.org/" downloaded="false" searched="false" default="false" conf="master(*), compile, runtime(*), runtime, compile(*), master" position="6">
+				<license name="MIT-style" url="http://www.opensource.org/licenses/mit-license.php"/>
+				<metadata-artifact status="no" details="" size="2810" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.specs2/scalaz-concurrent_2.10/ivy-7.0.0.xml" searched="false" origin-is-local="false" origin-location="https://repo1.maven.org/maven2/org/specs2/scalaz-concurrent_2.10/7.0.0/scalaz-concurrent_2.10-7.0.0.pom"/>
+				<caller organisation="org.specs2" name="specs2_2.10" conf="default, compile, runtime, master" rev="7.0.0" rev-constraint-default="7.0.0" rev-constraint-dynamic="7.0.0" callerrev="1.13"/>
+				<artifacts>
+					<artifact name="scalaz-concurrent_2.10" type="jar" ext="jar" status="no" details="" size="189253" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.specs2/scalaz-concurrent_2.10/jars/scalaz-concurrent_2.10-7.0.0.jar">
+						<origin-location is-local="false" location="https://repo1.maven.org/maven2/org/specs2/scalaz-concurrent_2.10/7.0.0/scalaz-concurrent_2.10-7.0.0.jar"/>
+					</artifact>
+				</artifacts>
+			</revision>
+		</module>
+		<module organisation="org.specs2" name="scalaz-effect_2.10">
+			<revision name="7.0.0" status="release" pubdate="20121220110525" resolver="sbt-chain" artresolver="sbt-chain" homepage="http://specs2.org/" downloaded="false" searched="false" default="false" conf="master(*), compile, runtime(*), runtime, compile(*), master" position="7">
+				<license name="MIT-style" url="http://www.opensource.org/licenses/mit-license.php"/>
+				<metadata-artifact status="no" details="" size="2657" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.specs2/scalaz-effect_2.10/ivy-7.0.0.xml" searched="false" origin-is-local="false" origin-location="https://repo1.maven.org/maven2/org/specs2/scalaz-effect_2.10/7.0.0/scalaz-effect_2.10-7.0.0.pom"/>
+				<caller organisation="org.specs2" name="scalaz-concurrent_2.10" conf="compile, runtime" rev="7.0.0" rev-constraint-default="7.0.0" rev-constraint-dynamic="7.0.0" callerrev="7.0.0"/>
+				<artifacts>
+					<artifact name="scalaz-effect_2.10" type="jar" ext="jar" status="no" details="" size="391773" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.specs2/scalaz-effect_2.10/jars/scalaz-effect_2.10-7.0.0.jar">
+						<origin-location is-local="false" location="https://repo1.maven.org/maven2/org/specs2/scalaz-effect_2.10/7.0.0/scalaz-effect_2.10-7.0.0.jar"/>
+					</artifact>
+				</artifacts>
+			</revision>
+		</module>
+		<module organisation="org.specs2" name="scalaz-core_2.10">
+			<revision name="7.0.0" status="release" pubdate="20121220110704" resolver="sbt-chain" artresolver="sbt-chain" homepage="http://specs2.org/" downloaded="false" searched="false" default="false" conf="master(*), compile, runtime(*), runtime, compile(*), master" position="5">
+				<license name="MIT-style" url="http://www.opensource.org/licenses/mit-license.php"/>
+				<metadata-artifact status="no" details="" size="2512" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.specs2/scalaz-core_2.10/ivy-7.0.0.xml" searched="false" origin-is-local="false" origin-location="https://repo1.maven.org/maven2/org/specs2/scalaz-core_2.10/7.0.0/scalaz-core_2.10-7.0.0.pom"/>
+				<caller organisation="org.specs2" name="specs2_2.10" conf="default, compile, runtime, master" rev="7.0.0" rev-constraint-default="7.0.0" rev-constraint-dynamic="7.0.0" callerrev="1.13"/>
+				<caller organisation="org.specs2" name="scalaz-concurrent_2.10" conf="compile, runtime" rev="7.0.0" rev-constraint-default="7.0.0" rev-constraint-dynamic="7.0.0" callerrev="7.0.0"/>
+				<caller organisation="org.specs2" name="scalaz-effect_2.10" conf="compile, runtime" rev="7.0.0" rev-constraint-default="7.0.0" rev-constraint-dynamic="7.0.0" callerrev="7.0.0"/>
+				<artifacts>
+					<artifact name="scalaz-core_2.10" type="jar" ext="jar" status="no" details="" size="8897195" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.specs2/scalaz-core_2.10/jars/scalaz-core_2.10-7.0.0.jar">
+						<origin-location is-local="false" location="https://repo1.maven.org/maven2/org/specs2/scalaz-core_2.10/7.0.0/scalaz-core_2.10-7.0.0.jar"/>
+					</artifact>
+				</artifacts>
+			</revision>
+		</module>
+		<module organisation="com.google.guava" name="guava">
+			<revision name="11.0.1" status="release" pubdate="20120109183212" resolver="sbt-chain" artresolver="sbt-chain" homepage="" downloaded="false" searched="false" default="false" conf="default, compile, runtime, default(compile), master" position="2">
+				<metadata-artifact status="no" details="" size="3835" time="0" location="/Users/davidmartinezrego/.ivy2/cache/com.google.guava/guava/ivy-11.0.1.xml" searched="false" origin-is-local="false" origin-location="https://repo1.maven.org/maven2/com/google/guava/guava/11.0.1/guava-11.0.1.pom"/>
+				<caller organisation="org.udc" name="strath-graph_2.10" conf="test, compile, runtime" rev="11.0.1" rev-constraint-default="11.0.1" rev-constraint-dynamic="11.0.1" callerrev="0.3.0"/>
+				<artifacts>
+					<artifact name="guava" type="jar" ext="jar" status="no" details="" size="1649781" time="0" location="/Users/davidmartinezrego/.ivy2/cache/com.google.guava/guava/jars/guava-11.0.1.jar">
+						<origin-location is-local="false" location="https://repo1.maven.org/maven2/com/google/guava/guava/11.0.1/guava-11.0.1.jar"/>
+					</artifact>
+				</artifacts>
+			</revision>
+		</module>
+		<module organisation="com.google.code.findbugs" name="jsr305">
+			<revision name="1.3.9" status="release" pubdate="20150521111837" resolver="sbt-chain" artresolver="sbt-chain" homepage="http://findbugs.sourceforge.net/" downloaded="false" searched="false" default="false" conf="master(*), compile, runtime(*), runtime, compile(*), master" position="3">
+				<license name="The Apache Software License, Version 2.0" url="http://www.apache.org/licenses/LICENSE-2.0.txt"/>
+				<metadata-artifact status="no" details="" size="2382" time="0" location="/Users/davidmartinezrego/.ivy2/cache/com.google.code.findbugs/jsr305/ivy-1.3.9.xml" searched="false" origin-is-local="false" origin-location="file:/Users/davidmartinezrego/Documents/activator-1.3.4/repository/com.google.code.findbugs/jsr305/1.3.9/ivys/ivy.xml"/>
+				<caller organisation="com.google.guava" name="guava" conf="default, compile, runtime, master" rev="1.3.9" rev-constraint-default="1.3.9" rev-constraint-dynamic="1.3.9" callerrev="11.0.1"/>
+				<artifacts>
+					<artifact name="jsr305" type="jar" ext="jar" status="no" details="" size="33015" time="0" location="/Users/davidmartinezrego/.ivy2/cache/com.google.code.findbugs/jsr305/jars/jsr305-1.3.9.jar">
+						<origin-location is-local="false" location="file:/Users/davidmartinezrego/Documents/activator-1.3.4/repository/com.google.code.findbugs/jsr305/1.3.9/jars/jsr305.jar"/>
+					</artifact>
+				</artifacts>
+			</revision>
+		</module>
+		<module organisation="com.univocity" name="univocity-parsers">
+			<revision name="1.5.6" status="release" pubdate="20150618100002" resolver="sbt-chain" artresolver="sbt-chain" homepage="http://github.com/uniVocity/univocity-parsers" downloaded="false" searched="false" default="false" conf="default, compile, runtime, default(compile), master" position="1">
+				<license name="Apache 2" url="http://www.apache.org/licenses/LICENSE-2.0.txt"/>
+				<metadata-artifact status="no" details="" size="3574" time="0" location="/Users/davidmartinezrego/.ivy2/cache/com.univocity/univocity-parsers/ivy-1.5.6.xml" searched="false" origin-is-local="false" origin-location="https://repo1.maven.org/maven2/com/univocity/univocity-parsers/1.5.6/univocity-parsers-1.5.6.pom"/>
+				<caller organisation="org.udc" name="strath-graph_2.10" conf="test, compile, runtime" rev="1.5.6" rev-constraint-default="1.5.6" rev-constraint-dynamic="1.5.6" callerrev="0.3.0"/>
+				<artifacts>
+					<artifact name="univocity-parsers" type="jar" ext="jar" status="no" details="" size="163786" time="0" location="/Users/davidmartinezrego/.ivy2/cache/com.univocity/univocity-parsers/jars/univocity-parsers-1.5.6.jar">
+						<origin-location is-local="false" location="https://repo1.maven.org/maven2/com/univocity/univocity-parsers/1.5.6/univocity-parsers-1.5.6.jar"/>
+					</artifact>
+				</artifacts>
+			</revision>
+		</module>
+		<module organisation="org.scala-lang" name="scala-library">
+			<revision name="2.10.4" status="release" pubdate="20140318214629" resolver="sbt-chain" artresolver="sbt-chain" homepage="http://www.scala-lang.org/" extra-info.apiURL="http://www.scala-lang.org/api/2.10.4/" downloaded="false" searched="false" default="false" conf="default, compile, runtime, default(compile), master, master(*), runtime(*), compile(*)" position="0">
+				<license name="BSD-like" url="http://www.scala-lang.org/downloads/license.html          "/>
+				<metadata-artifact status="no" details="" size="2487" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.scala-lang/scala-library/ivy-2.10.4.xml" searched="false" origin-is-local="false" origin-location="https://repo1.maven.org/maven2/org/scala-lang/scala-library/2.10.4/scala-library-2.10.4.pom"/>
+				<caller organisation="org.specs2" name="scalaz-core_2.10" conf="compile, runtime" rev="2.10.0" rev-constraint-default="2.10.0" rev-constraint-dynamic="2.10.0" callerrev="7.0.0"/>
+				<caller organisation="org.udc" name="strath-graph_2.10" conf="test, compile, runtime" rev="2.10.4" rev-constraint-default="2.10.4" rev-constraint-dynamic="2.10.4" callerrev="0.3.0"/>
+				<caller organisation="org.scalatest" name="scalatest_2.10" conf="default, compile, runtime, master" rev="2.10.0" rev-constraint-default="2.10.0" rev-constraint-dynamic="2.10.0" callerrev="2.0"/>
+				<caller organisation="org.specs2" name="scalaz-concurrent_2.10" conf="compile, runtime" rev="2.10.0" rev-constraint-default="2.10.0" rev-constraint-dynamic="2.10.0" callerrev="7.0.0"/>
+				<caller organisation="org.scala-lang" name="scala-reflect" conf="compile, runtime" rev="2.10.0" rev-constraint-default="2.10.0" rev-constraint-dynamic="2.10.0" callerrev="2.10.0"/>
+				<caller organisation="org.specs2" name="scalaz-effect_2.10" conf="compile, runtime" rev="2.10.0" rev-constraint-default="2.10.0" rev-constraint-dynamic="2.10.0" callerrev="7.0.0"/>
+				<artifacts>
+					<artifact name="scala-library" type="jar" ext="jar" status="no" details="" size="7126372" time="0" location="/Users/davidmartinezrego/.ivy2/cache/org.scala-lang/scala-library/jars/scala-library-2.10.4.jar">
+						<origin-location is-local="false" location="UNKNOWN"/>
+					</artifact>
+				</artifacts>
+			</revision>
+			<revision name="2.10.0" evicted="latest-revision" evicted-reason="" downloaded="false" searched="false" conf="master(*), compile, runtime(*), runtime, compile(*), master, default, default(compile)" position="-1">
+				<evicted-by rev="2.10.4"/>
+				<caller organisation="org.specs2" name="scalaz-core_2.10" conf="compile, runtime" rev="2.10.0" rev-constraint-default="2.10.0" rev-constraint-dynamic="2.10.0" callerrev="7.0.0"/>
+				<caller organisation="org.udc" name="strath-graph_2.10" conf="test, compile, runtime" rev="2.10.4" rev-constraint-default="2.10.4" rev-constraint-dynamic="2.10.4" callerrev="0.3.0"/>
+				<caller organisation="org.scalatest" name="scalatest_2.10" conf="default, compile, runtime, master" rev="2.10.0" rev-constraint-default="2.10.0" rev-constraint-dynamic="2.10.0" callerrev="2.0"/>
+				<caller organisation="org.specs2" name="scalaz-concurrent_2.10" conf="compile, runtime" rev="2.10.0" rev-constraint-default="2.10.0" rev-constraint-dynamic="2.10.0" callerrev="7.0.0"/>
+				<caller organisation="org.scala-lang" name="scala-reflect" conf="compile, runtime" rev="2.10.0" rev-constraint-default="2.10.0" rev-constraint-dynamic="2.10.0" callerrev="2.10.0"/>
+				<caller organisation="org.specs2" name="scalaz-effect_2.10" conf="compile, runtime" rev="2.10.0" rev-constraint-default="2.10.0" rev-constraint-dynamic="2.10.0" callerrev="7.0.0"/>
+				<artifacts>
+				</artifacts>
+			</revision>
+		</module>
+	</dependencies>
+</ivy-report>

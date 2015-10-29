@@ -1,2 +1,2 @@
-# strathmore
-Implementation of E2LSH in Spark
+# strath
+Implementation of Hashing algorithms for building graphs and ML Graph algorithms in Spark

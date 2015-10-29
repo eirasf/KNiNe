@@ -1,0 +1,380 @@
+format version: 5
+output mode:
+1 items
+0 -> single
+output directories:
+1 items
+output dir -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes
+compile options:
+0 items
+javac options:
+0 items
+compiler version:
+1 items
+0 -> 2.10.4
+compile order:
+1 items
+0 -> Mixed
+name hashing:
+1 items
+0 -> true
+products:
+27 items
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$basicSettings$1.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$basicSettings$2.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$basicSettings$3.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$basicSettings$4.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$basicSettings$5.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$basicSettings$6.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$sbtAssemblySettings$1.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$sbtAssemblySettings$2$$anonfun$apply$1.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$sbtAssemblySettings$2.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$sbtAssemblySettings$3$$anonfun$apply$2.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$sbtAssemblySettings$3.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/Dependencies$.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/Dependencies$Libraries$.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/Dependencies$V$.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/Dependencies.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$1.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$project$1.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$project$2.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$project$3.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$project$4.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$project$5.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$settings$1$$anonfun$apply$1.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$settings$1.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$.class
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild.class
+binary dependencies:
+24 items
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Library/Java/JavaVirtualMachines/jdk1.8.0_31.jdk/Contents/Home/jre/lib/rt.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/apply-macro/jars/apply-macro-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/collections/jars/collections-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/ivy/jars/ivy-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/main-settings/jars/main-settings-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/main/jars/main-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/sbt/jars/sbt-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/task-system/jars/task-system-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/.ivy2/cache/scala_2.10/sbt_0.13/com.eed3si9n/sbt-assembly/jars/sbt-assembly-0.11.2.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/.sbt/boot/scala-2.10.4/lib/scala-library.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> /Library/Java/JavaVirtualMachines/jdk1.8.0_31.jdk/Contents/Home/jre/lib/rt.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/io/jars/io-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/ivy/jars/ivy-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/sbt/jars/sbt-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> /Users/davidmartinezrego/.ivy2/cache/scala_2.10/sbt_0.13/com.eed3si9n/sbt-assembly/jars/sbt-assembly-0.11.2.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> /Users/davidmartinezrego/.sbt/boot/scala-2.10.4/lib/scala-library.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Library/Java/JavaVirtualMachines/jdk1.8.0_31.jdk/Contents/Home/jre/lib/rt.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/collections/jars/collections-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/command/jars/command-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/ivy/jars/ivy-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/main-settings/jars/main-settings-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/main/jars/main-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/sbt/jars/sbt-0.13.6.jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/.sbt/boot/scala-2.10.4/lib/scala-library.jar
+direct source dependencies:
+0 items
+direct external dependencies:
+0 items
+public inherited source dependencies:
+0 items
+public inherited external dependencies:
+0 items
+member reference internal dependencies:
+3 items
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> /Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala
+member reference external dependencies:
+0 items
+inheritance internal dependencies:
+0 items
+inheritance external dependencies:
+0 items
+class names:
+27 items
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> BuildSettings
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> BuildSettings$
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> BuildSettings$$anonfun$basicSettings$1
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> BuildSettings$$anonfun$basicSettings$2
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> BuildSettings$$anonfun$basicSettings$3
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> BuildSettings$$anonfun$basicSettings$4
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> BuildSettings$$anonfun$basicSettings$5
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> BuildSettings$$anonfun$basicSettings$6
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> BuildSettings$$anonfun$sbtAssemblySettings$1
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> BuildSettings$$anonfun$sbtAssemblySettings$2
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> BuildSettings$$anonfun$sbtAssemblySettings$2$$anonfun$apply$1
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> BuildSettings$$anonfun$sbtAssemblySettings$3
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> BuildSettings$$anonfun$sbtAssemblySettings$3$$anonfun$apply$2
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> Dependencies
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> Dependencies$
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> Dependencies$Libraries$
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> Dependencies$V$
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> SparkGeoInferProjectBuild
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> SparkGeoInferProjectBuild$
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> SparkGeoInferProjectBuild$$anonfun$1
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> SparkGeoInferProjectBuild$$anonfun$project$1
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> SparkGeoInferProjectBuild$$anonfun$project$2
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> SparkGeoInferProjectBuild$$anonfun$project$3
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> SparkGeoInferProjectBuild$$anonfun$project$4
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> SparkGeoInferProjectBuild$$anonfun$project$5
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> SparkGeoInferProjectBuild$$anonfun$settings$1
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> SparkGeoInferProjectBuild$$anonfun$settings$1$$anonfun$apply$1
+used names:
+170 items
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> !=
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> $p1
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> &&
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> +
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> ++
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> ++=
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> :=
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> <<=
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> <init>
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> ==
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> >=
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> AList
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> Any
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> AnyRef
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> Append
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> AssemblyKeys
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> BuildSettings
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> Def
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> Dependencies
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> FullInstance
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> InitializeInstance
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> InputWrapper
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> Keys
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> MergeStrategy
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> Nothing
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> PathList
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> Plugin
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> Predef
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> Seq
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> Set
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> Setting
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> _1
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> _2
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> _root_
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> app
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> appendN
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> appendSeq
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> apply
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> assembly
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> assemblySettings
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> basicSettings
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> buildSettings
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> canBuildFrom
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> collection
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> cp
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> data
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> description
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> discard
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> endsWith
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> excludedJars
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> excludes
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> filter
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> fullClasspath
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> get
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> getName
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> in
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> isEmpty
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> jar
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> jarName
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> last
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> lengthCompare
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> macroValueI
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> map
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> mergeStrategy
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> name
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> old
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> organization
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> package
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> pure
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> resolutionRepos
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> resolvers
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> richInitializeTask
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> sbt
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> sbtAssemblySettings
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> sbtassembly
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> scala
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> scalaVersion
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> scalacOptions
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> set
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> startsWith
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> toITask
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> tuple2
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> unapplySeq
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> unary_!
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> value
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> version
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> wrapInit_☃☃
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> x
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> %
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> %%
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> +
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> <init>
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> AnyRef
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> Dependencies
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> Libraries
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> Path
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> Plugin
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> Seq
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> V
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> absolutePath
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> apply
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> at
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> collection
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> guava
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> hamcrest
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> junit
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> moduleIDConfigurable
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> package
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> parser
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> resolutionRepos
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> richFile
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> sbt
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> sbtassembly
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> scala
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> scalaTest
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> scalatest
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> spark
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> sparkCore
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> sparkMllib
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> sparkSql
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> specs2
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> toGroupID
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> toRepositoryName
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> userHome
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> +
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> ++=
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> :+
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> :=
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> <init>
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> Append
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> Build
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> BuildSettings
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> ConflictManager
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> Dependencies
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> InitializeInstance
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> Keys
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> Libraries
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> Project
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> Seq
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> SparkGeoInferProjectBuild
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> appendN
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> appendSeq
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> apply
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> buildSettings
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> canBuildFrom
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> collection
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> conflictManager
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> currentProject
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> extract
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> file
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> guava
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> hamcrest
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> id
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> junit
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> libraryDependencies
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> package
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> parser
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> project
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> pure
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> s
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> sbt
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> scalaTest
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> set
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> settings
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> shellPrompt
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> sparkCore
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> sparkMllib
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> sparkSql
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> specs2
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> strict
+product stamps:
+27 items
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$basicSettings$1.class -> lastModified(1446136139000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$basicSettings$2.class -> lastModified(1446136139000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$basicSettings$3.class -> lastModified(1446136139000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$basicSettings$4.class -> lastModified(1446136139000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$basicSettings$5.class -> lastModified(1446136139000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$basicSettings$6.class -> lastModified(1446136139000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$sbtAssemblySettings$1.class -> lastModified(1446136139000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$sbtAssemblySettings$2$$anonfun$apply$1.class -> lastModified(1446136139000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$sbtAssemblySettings$2.class -> lastModified(1446136139000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$sbtAssemblySettings$3$$anonfun$apply$2.class -> lastModified(1446136139000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$$anonfun$sbtAssemblySettings$3.class -> lastModified(1446136139000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings$.class -> lastModified(1446136139000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/BuildSettings.class -> lastModified(1446136139000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/Dependencies$.class -> lastModified(1446136164000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/Dependencies$Libraries$.class -> lastModified(1446136164000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/Dependencies$V$.class -> lastModified(1446136164000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/Dependencies.class -> lastModified(1446136164000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$1.class -> lastModified(1446135720000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$project$1.class -> lastModified(1446135720000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$project$2.class -> lastModified(1446135720000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$project$3.class -> lastModified(1446135720000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$project$4.class -> lastModified(1446135720000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$project$5.class -> lastModified(1446135720000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$settings$1$$anonfun$apply$1.class -> lastModified(1446135720000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$$anonfun$settings$1.class -> lastModified(1446135720000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild$.class -> lastModified(1446135720000)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/target/scala-2.10/sbt-0.13/classes/SparkGeoInferProjectBuild.class -> lastModified(1446135720000)
+source stamps:
+3 items
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> hash(3a237fc20be50b4748dae7e8292ade375fad03c0)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> hash(f06c1e67e1e4724e30bcd30dda18bd7aa5a32c6b)
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> hash(af7909ef15a8467a80d33f856d1130630b8c5499)
+binary stamps:
+12 items
+/Library/Java/JavaVirtualMachines/jdk1.8.0_31.jdk/Contents/Home/jre/lib/rt.jar -> lastModified(1418879070000)
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/apply-macro/jars/apply-macro-0.13.6.jar -> lastModified(1429631326000)
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/collections/jars/collections-0.13.6.jar -> lastModified(1430155718000)
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/command/jars/command-0.13.6.jar -> lastModified(1430154333000)
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/io/jars/io-0.13.6.jar -> lastModified(1430156139000)
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/ivy/jars/ivy-0.13.6.jar -> lastModified(1430150698000)
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/main-settings/jars/main-settings-0.13.6.jar -> lastModified(1430152471000)
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/main/jars/main-0.13.6.jar -> lastModified(1430154620000)
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/sbt/jars/sbt-0.13.6.jar -> lastModified(1429630634000)
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/task-system/jars/task-system-0.13.6.jar -> lastModified(1429631248000)
+/Users/davidmartinezrego/.ivy2/cache/scala_2.10/sbt_0.13/com.eed3si9n/sbt-assembly/jars/sbt-assembly-0.11.2.jar -> lastModified(1395262337000)
+/Users/davidmartinezrego/.sbt/boot/scala-2.10.4/lib/scala-library.jar -> lastModified(1395179187000)
+class names:
+12 items
+/Library/Java/JavaVirtualMachines/jdk1.8.0_31.jdk/Contents/Home/jre/lib/rt.jar -> java.lang.Object
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/apply-macro/jars/apply-macro-0.13.6.jar -> sbt.appmacro.Instance$
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/collections/jars/collections-0.13.6.jar -> sbt.AList$
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/command/jars/command-0.13.6.jar -> sbt.State
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/io/jars/io-0.13.6.jar -> sbt.RichFile
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/ivy/jars/ivy-0.13.6.jar -> sbt.impl.ModuleIDConfigurable
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/main-settings/jars/main-settings-0.13.6.jar -> sbt.std.InitializeInstance$
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/main/jars/main-0.13.6.jar -> sbt.ProjectExtra
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/sbt/jars/sbt-0.13.6.jar -> sbt.package$
+/Users/davidmartinezrego/.ivy2/cache/org.scala-sbt/task-system/jars/task-system-0.13.6.jar -> sbt.Task
+/Users/davidmartinezrego/.ivy2/cache/scala_2.10/sbt_0.13/com.eed3si9n/sbt-assembly/jars/sbt-assembly-0.11.2.jar -> sbtassembly.Plugin$
+/Users/davidmartinezrego/.sbt/boot/scala-2.10.4/lib/scala-library.jar -> scala.collection.Seq$
+internal apis:
+3 items
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> 
+rO0ABXNyABB4c2J0aS5hcGkuU291cmNlFlpwRASfbtoCAAZJAAdhcGlIYXNoWgAIaGFzTWFjcm9MABhfaW50ZXJuYWxPbmx5X25hbWVIYXNoZXN0ACRMeHNidGkvYXBpL19pbnRlcm5hbE9ubHlfTmFtZUhhc2hlcztMAANhcGl0ABVMeHNidGkvYXBpL1NvdXJjZUFQSTtMAAtjb21waWxhdGlvbnQAF0x4c2J0aS9hcGkvQ29tcGlsYXRpb247WwAEaGFzaHQAAltCeHC5G3mhAHNyACJ4c2J0aS5hcGkuX2ludGVybmFsT25seV9OYW1lSGFzaGVzVNq+mfrU7EwCAAJbAA9pbXBsaWNpdE1lbWJlcnN0ACNbTHhzYnRpL2FwaS9faW50ZXJuYWxPbmx5X05hbWVIYXNoO1sADnJlZ3VsYXJNZW1iZXJzcQB+AAd4cHVyACNbTHhzYnRpLmFwaS5faW50ZXJuYWxPbmx5X05hbWVIYXNoO0lagLbdlov0AgAAeHAAAAAAdXEAfgAJAAAAF3NyACB4c2J0aS5hcGkuX2ludGVybmFsT25seV9OYW1lSGFzaFsO9SJ2OFfPAgACSQAEaGFzaEwABG5hbWV0ABJMamF2YS9sYW5nL1N0cmluZzt4cNKSkWp0AAZub3RpZnlzcQB+AAw4z79idAAEd2FpdHNxAH4ADAL+7jR0AA0kYXNJbnN0YW5jZU9mc3EAfgAM2e7ocXQABmVxdWFsc3NxAH4ADK5dIsl0AAxhc0luc3RhbmNlT2ZzcQB+AAxu4VcndAAMc3luY2hyb25pemVkc3EAfgAM4+6US3QADSRpc0luc3RhbmNlT2ZzcQB+AAxLynWKdAANYmFzaWNTZXR0aW5nc3NxAH4ADKaZQ350AAlub3RpZnlBbGxzcQB+AAytOzBRdAAMaXNJbnN0YW5jZU9mc3EAfgAMGo0D/nQAE3NidEFzc2VtYmx5U2V0dGluZ3NzcQB+AAxB5XDUdAACPT1zcQB+AAw2HDW0dAAFY2xvbmVzcQB+AAzeP1mBdAAIdG9TdHJpbmdzcQB+AAyyEdcfdAACIT1zcQB+AAzbnz63dAAIZ2V0Q2xhc3NzcQB+AAzLrci5dAANQnVpbGRTZXR0aW5nc3NxAH4ADOHnsuF0AAJuZXNxAH4ADDNMFst0AA1idWlsZFNldHRpbmdzc3EAfgAMCyhQ7HQAAmVxc3EAfgAM6fiPXHQAAiMjc3EAfgAMuOAmOXQACGZpbmFsaXplc3EAfgAMA+5eLnQACGhhc2hDb2Rlc3IAE3hzYnRpLmFwaS5Tb3VyY2VBUEm5Xqf5KSM4pAIAAlsAC2RlZmluaXRpb25zdAAXW0x4c2J0aS9hcGkvRGVmaW5pdGlvbjtbAAhwYWNrYWdlc3QAFFtMeHNidGkvYXBpL1BhY2thZ2U7eHB1cgAXW0x4c2J0aS5hcGkuRGVmaW5pdGlvbjuIyVzntONeDgIAAHhwAAAAAXNyABN4c2J0aS5hcGkuQ2xhc3NMaWtlgzQcod+wl2wCAARMAA5kZWZpbml0aW9uVHlwZXQAGkx4c2J0aS9hcGkvRGVmaW5pdGlvblR5cGU7WwAQc2F2ZWRBbm5vdGF0aW9uc3QAE1tMamF2YS9sYW5nL1N0cmluZztMAAhzZWxmVHlwZXQAEEx4c2J0aS9hcGkvTGF6eTtMAAlzdHJ1Y3R1cmVxAH4ARXhyACF4c2J0aS5hcGkuUGFyYW1ldGVyaXplZERlZmluaXRpb275EW6x1VA84gIAAVsADnR5cGVQYXJhbWV0ZXJzdAAaW0x4c2J0aS9hcGkvVHlwZVBhcmFtZXRlcjt4cgAUeHNidGkuYXBpLkRlZmluaXRpb26HKhvocULjRgIABEwABmFjY2Vzc3QAEkx4c2J0aS9hcGkvQWNjZXNzO1sAC2Fubm90YXRpb25zdAAXW0x4c2J0aS9hcGkvQW5ub3RhdGlvbjtMAAltb2RpZmllcnN0ABVMeHNidGkvYXBpL01vZGlmaWVycztMAARuYW1lcQB+AA14cHNyABB4c2J0aS5hcGkuUHVibGljulg9rmwtYEICAAB4cgAQeHNidGkuYXBpLkFjY2Vzc91imvgdYzFIAgAAeHB1cgAXW0x4c2J0aS5hcGkuQW5ub3RhdGlvbjvrl+sZEPaNSAIAAHhwAAAAAHNyABN4c2J0aS5hcGkuTW9kaWZpZXJzxxETIWmc3CQCAAFCAAVmbGFnc3hwAHEAfgAvdXIAGltMeHNidGkuYXBpLlR5cGVQYXJhbWV0ZXI72W0mDyid8rYCAAB4cAAAAAB+cgAYeHNidGkuYXBpLkRlZmluaXRpb25UeXBlAAAAAAAAAAASAAB4cgAOamF2YS5sYW5nLkVudW0AAAAAAAAAABIAAHhwdAAGTW9kdWxldXIAE1tMamF2YS5sYW5nLlN0cmluZzut0lbn6R17RwIAAHhwAAAAAHNyABN4c2J0aS5TYWZlTGF6eSRJbXBsUAIuk5eXQD8CAANaAAhiaXRtYXAkMEwAAl90dAASTGphdmEvbGFuZy9PYmplY3Q7TAAEZXZhbHQAEUxzY2FsYS9GdW5jdGlvbjA7eHIAFnhzYnRpLmFwaS5BYnN0cmFjdExhennTd7UBX7vnoAIAAHhwAXNyABN4c2J0aS5hcGkuRW1wdHlUeXBlvP2eRkk7iSQCAAB4cgAUeHNidGkuYXBpLlNpbXBsZVR5cGVyeGKIISO/QAIAAHhyAA54c2J0aS5hcGkuVHlwZT9q2SEWSarKAgAAeHBwc3EAfgBcAXNyABN4c2J0aS5hcGkuU3RydWN0dXJlqar5gJNv2AACAANMAAhkZWNsYXJlZHEAfgBFTAAJaW5oZXJpdGVkcQB+AEVMAAdwYXJlbnRzcQB+AEV4cQB+AGNzcQB+AFwBdXEAfgBAAAAAAHBzcQB+AFwBdXEAfgBAAAAAAHBzcQB+AFwBdXIAEVtMeHNidGkuYXBpLlR5cGU7dP+lWnv56UECAAB4cAAAAAJzcgAUeHNidGkuYXBpLlByb2plY3Rpb27z0o1U6UWkLQIAAkwAAmlkcQB+AA1MAAZwcmVmaXh0ABZMeHNidGkvYXBpL1NpbXBsZVR5cGU7eHEAfgBidAAGT2JqZWN0c3IAE3hzYnRpLmFwaS5TaW5nbGV0b278p1/4z1bkRgIAAUwABHBhdGh0ABBMeHNidGkvYXBpL1BhdGg7eHEAfgBic3IADnhzYnRpLmFwaS5QYXRomz1cCM6lJ4QCAAFbAApjb21wb25lbnRzdAAaW0x4c2J0aS9hcGkvUGF0aENvbXBvbmVudDt4cHVyABpbTHhzYnRpLmFwaS5QYXRoQ29tcG9uZW50O0PaCXQtZxZ0AgAAeHAAAAADc3IADHhzYnRpLmFwaS5JZJgybIs3U8RAAgABTAACaWRxAH4ADXhyABd4c2J0aS5hcGkuUGF0aENvbXBvbmVudF+aIlsuhp+8AgAAeHB0AARqYXZhc3EAfgB7dAAEbGFuZ3NyAA54c2J0aS5hcGkuVGhpc9sJ7abMWkBcAgAAeHEAfgB8c3EAfgBvdAADQW55c3EAfgBzc3EAfgB2dXEAfgB5AAAAAnNxAH4Ae3QABXNjYWxhcQB+AIJwcHVyABRbTHhzYnRpLmFwaS5QYWNrYWdlO1sTGTdwpyehAgAAeHAAAAAAc3IAFXhzYnRpLmFwaS5Db21waWxhdGlvbu364MNq6KBCAgACSgAJc3RhcnRUaW1lWwAHb3V0cHV0c3QAGltMeHNidGkvYXBpL091dHB1dFNldHRpbmc7eHAAAAFQtG42uXVyABpbTHhzYnRpLmFwaS5PdXRwdXRTZXR0aW5nO39qwvOnh6VCAgAAeHAAAAABc3IAF3hzYnRpLmFwaS5PdXRwdXRTZXR0aW5netmaR3T7HXsCAAJMAA9vdXRwdXREaXJlY3RvcnlxAH4ADUwAD3NvdXJjZURpcmVjdG9yeXEAfgANeHB0AFsvVXNlcnMvZGF2aWRtYXJ0aW5lenJlZ28vRGVza3RvcC9naXRyZXBvcy9zdHJhdGgvcHJvamVjdC90YXJnZXQvc2NhbGEtMi4xMC9zYnQtMC4xMy9jbGFzc2VzdAABL3VyAAJbQqzzF/gGCFTgAgAAeHAAAAAUOiN/wgvlC0dI2ufoKSreN1+tA8A=
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> 
+rO0ABXNyABB4c2J0aS5hcGkuU291cmNlFlpwRASfbtoCAAZJAAdhcGlIYXNoWgAIaGFzTWFjcm9MABhfaW50ZXJuYWxPbmx5X25hbWVIYXNoZXN0ACRMeHNidGkvYXBpL19pbnRlcm5hbE9ubHlfTmFtZUhhc2hlcztMAANhcGl0ABVMeHNidGkvYXBpL1NvdXJjZUFQSTtMAAtjb21waWxhdGlvbnQAF0x4c2J0aS9hcGkvQ29tcGlsYXRpb247WwAEaGFzaHQAAltCeHCjvdt/AHNyACJ4c2J0aS5hcGkuX2ludGVybmFsT25seV9OYW1lSGFzaGVzVNq+mfrU7EwCAAJbAA9pbXBsaWNpdE1lbWJlcnN0ACNbTHhzYnRpL2FwaS9faW50ZXJuYWxPbmx5X05hbWVIYXNoO1sADnJlZ3VsYXJNZW1iZXJzcQB+AAd4cHVyACNbTHhzYnRpLmFwaS5faW50ZXJuYWxPbmx5X05hbWVIYXNoO0lagLbdlov0AgAAeHAAAAAAdXEAfgAJAAAAInNyACB4c2J0aS5hcGkuX2ludGVybmFsT25seV9OYW1lSGFzaFsO9SJ2OFfPAgACSQAEaGFzaEwABG5hbWV0ABJMamF2YS9sYW5nL1N0cmluZzt4cDBQyXx0AAhoYW1jcmVzdHNxAH4ADKr2VpF0AAZub3RpZnlzcQB+AAyzEI4IdAAJc2NhbGF0ZXN0c3EAfgAMfKRObHQABHdhaXRzcQB+AAwtjtiIdAAJc2NhbGFUZXN0c3EAfgAMMwqohnQADSRhc0luc3RhbmNlT2ZzcQB+AAxeeKVudAAGZXF1YWxzc3EAfgAMNOHc83QABWp1bml0c3EAfgAMwubth3QADGFzSW5zdGFuY2VPZnNxAH4ADBg2cL10AAZwYXJzZXJzcQB+AAz/mycUdAAJc3BhcmtDb3Jlc3EAfgAM7mG1+3QACUxpYnJhcmllc3NxAH4ADIjJx+R0AAxzeW5jaHJvbml6ZWRzcQB+AAydbW1UdAAMRGVwZW5kZW5jaWVzc3EAfgAMtCpFkXQADSRpc0luc3RhbmNlT2ZzcQB+AAy/zNsAdAAKc3BhcmtNbGxpYnNxAH4ADCxwlWV0AAlub3RpZnlBbGxzcQB+AAx/Fo2SdAAMaXNJbnN0YW5jZU9mc3EAfgAMbDNL9nQAAVZzcQB+AAz2XZYLdAAFc3BhcmtzcQB+AAynSpUedAACPT1zcQB+AAywFEebdAAIc3BhcmtTcWxzcQB+AAxY+22sdAAFY2xvbmVzcQB+AAzzWSATdAAPcmVzb2x1dGlvblJlcG9zc3EAfgAM5Hfsg3QACHRvU3RyaW5nc3EAfgAMclUwgnQAAiE9c3EAfgAMPQ+k2nQACGdldENsYXNzc3EAfgAMFElqOXQAAm5lc3EAfgAMCdO573QABWd1YXZhc3EAfgAMNv11tnQAAmVxc3EAfgAM/h53FnQABnNwZWNzMnNxAH4ADPsBiW10AAIjI3NxAH4ADGeCvN10AAhmaW5hbGl6ZXNxAH4ADAh90JV0AAhoYXNoQ29kZXNyABN4c2J0aS5hcGkuU291cmNlQVBJuV6n+SkjOKQCAAJbAAtkZWZpbml0aW9uc3QAF1tMeHNidGkvYXBpL0RlZmluaXRpb247WwAIcGFja2FnZXN0ABRbTHhzYnRpL2FwaS9QYWNrYWdlO3hwdXIAF1tMeHNidGkuYXBpLkRlZmluaXRpb247iMlc57TjXg4CAAB4cAAAAAFzcgATeHNidGkuYXBpLkNsYXNzTGlrZYM0HKHfsJdsAgAETAAOZGVmaW5pdGlvblR5cGV0ABpMeHNidGkvYXBpL0RlZmluaXRpb25UeXBlO1sAEHNhdmVkQW5ub3RhdGlvbnN0ABNbTGphdmEvbGFuZy9TdHJpbmc7TAAIc2VsZlR5cGV0ABBMeHNidGkvYXBpL0xhenk7TAAJc3RydWN0dXJlcQB+AFt4cgAheHNidGkuYXBpLlBhcmFtZXRlcml6ZWREZWZpbml0aW9u+RFusdVQPOICAAFbAA50eXBlUGFyYW1ldGVyc3QAGltMeHNidGkvYXBpL1R5cGVQYXJhbWV0ZXI7eHIAFHhzYnRpLmFwaS5EZWZpbml0aW9uhyob6HFC40YCAARMAAZhY2Nlc3N0ABJMeHNidGkvYXBpL0FjY2VzcztbAAthbm5vdGF0aW9uc3QAF1tMeHNidGkvYXBpL0Fubm90YXRpb247TAAJbW9kaWZpZXJzdAAVTHhzYnRpL2FwaS9Nb2RpZmllcnM7TAAEbmFtZXEAfgANeHBzcgAQeHNidGkuYXBpLlB1YmxpY7pYPa5sLWBCAgAAeHIAEHhzYnRpLmFwaS5BY2Nlc3PdYpr4HWMxSAIAAHhwdXIAF1tMeHNidGkuYXBpLkFubm90YXRpb24765frGRD2jUgCAAB4cAAAAABzcgATeHNidGkuYXBpLk1vZGlmaWVyc8cREyFpnNwkAgABQgAFZmxhZ3N4cABxAH4AKXVyABpbTHhzYnRpLmFwaS5UeXBlUGFyYW1ldGVyO9ltJg8onfK2AgAAeHAAAAAAfnIAGHhzYnRpLmFwaS5EZWZpbml0aW9uVHlwZQAAAAAAAAAAEgAAeHIADmphdmEubGFuZy5FbnVtAAAAAAAAAAASAAB4cHQABk1vZHVsZXVyABNbTGphdmEubGFuZy5TdHJpbmc7rdJW5+kde0cCAAB4cAAAAABzcgATeHNidGkuU2FmZUxhenkkSW1wbFACLpOXl0A/AgADWgAIYml0bWFwJDBMAAJfdHQAEkxqYXZhL2xhbmcvT2JqZWN0O0wABGV2YWx0ABFMc2NhbGEvRnVuY3Rpb24wO3hyABZ4c2J0aS5hcGkuQWJzdHJhY3RMYXp503e1AV+756ACAAB4cAFzcgATeHNidGkuYXBpLkVtcHR5VHlwZbz9nkZJO4kkAgAAeHIAFHhzYnRpLmFwaS5TaW1wbGVUeXBlcnhiiCEjv0ACAAB4cgAOeHNidGkuYXBpLlR5cGU/atkhFkmqygIAAHhwcHNxAH4AcgFzcgATeHNidGkuYXBpLlN0cnVjdHVyZamq+YCTb9gAAgADTAAIZGVjbGFyZWRxAH4AW0wACWluaGVyaXRlZHEAfgBbTAAHcGFyZW50c3EAfgBbeHEAfgB5c3EAfgByAXVxAH4AVgAAAABwc3EAfgByAXVxAH4AVgAAAABwc3EAfgByAXVyABFbTHhzYnRpLmFwaS5UeXBlO3T/pVp7+elBAgAAeHAAAAACc3IAFHhzYnRpLmFwaS5Qcm9qZWN0aW9u89KNVOlFpC0CAAJMAAJpZHEAfgANTAAGcHJlZml4dAAWTHhzYnRpL2FwaS9TaW1wbGVUeXBlO3hxAH4AeHQABk9iamVjdHNyABN4c2J0aS5hcGkuU2luZ2xldG9u/Kdf+M9W5EYCAAFMAARwYXRodAAQTHhzYnRpL2FwaS9QYXRoO3hxAH4AeHNyAA54c2J0aS5hcGkuUGF0aJs9XAjOpSeEAgABWwAKY29tcG9uZW50c3QAGltMeHNidGkvYXBpL1BhdGhDb21wb25lbnQ7eHB1cgAaW0x4c2J0aS5hcGkuUGF0aENvbXBvbmVudDtD2gl0LWcWdAIAAHhwAAAAA3NyAAx4c2J0aS5hcGkuSWSYMmyLN1PEQAIAAUwAAmlkcQB+AA14cgAXeHNidGkuYXBpLlBhdGhDb21wb25lbnRfmiJbLoafvAIAAHhwdAAEamF2YXNxAH4AkXQABGxhbmdzcgAOeHNidGkuYXBpLlRoaXPbCe2mzFpAXAIAAHhxAH4AknNxAH4AhXQAA0FueXNxAH4AiXNxAH4AjHVxAH4AjwAAAAJzcQB+AJF0AAVzY2FsYXEAfgCYcHB1cgAUW0x4c2J0aS5hcGkuUGFja2FnZTtbExk3cKcnoQIAAHhwAAAAAHNyABV4c2J0aS5hcGkuQ29tcGlsYXRpb27t+uDDauigQgIAAkoACXN0YXJ0VGltZVsAB291dHB1dHN0ABpbTHhzYnRpL2FwaS9PdXRwdXRTZXR0aW5nO3hwAAABULRuoMh1cgAaW0x4c2J0aS5hcGkuT3V0cHV0U2V0dGluZzt/asLzp4elQgIAAHhwAAAAAXNyABd4c2J0aS5hcGkuT3V0cHV0U2V0dGluZ3rZmkd0+x17AgACTAAPb3V0cHV0RGlyZWN0b3J5cQB+AA1MAA9zb3VyY2VEaXJlY3RvcnlxAH4ADXhwdABbL1VzZXJzL2RhdmlkbWFydGluZXpyZWdvL0Rlc2t0b3AvZ2l0cmVwb3Mvc3RyYXRoL3Byb2plY3QvdGFyZ2V0L3NjYWxhLTIuMTAvc2J0LTAuMTMvY2xhc3Nlc3QAAS91cgACW0Ks8xf4BghU4AIAAHhwAAAAFPBsHmfh5HJOMLzTDdoYvXqloyxr
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> 
+rO0ABXNyABB4c2J0aS5hcGkuU291cmNlFlpwRASfbtoCAAZJAAdhcGlIYXNoWgAIaGFzTWFjcm9MABhfaW50ZXJuYWxPbmx5X25hbWVIYXNoZXN0ACRMeHNidGkvYXBpL19pbnRlcm5hbE9ubHlfTmFtZUhhc2hlcztMAANhcGl0ABVMeHNidGkvYXBpL1NvdXJjZUFQSTtMAAtjb21waWxhdGlvbnQAF0x4c2J0aS9hcGkvQ29tcGlsYXRpb247WwAEaGFzaHQAAltCeHB03UtcAHNyACJ4c2J0aS5hcGkuX2ludGVybmFsT25seV9OYW1lSGFzaGVzVNq+mfrU7EwCAAJbAA9pbXBsaWNpdE1lbWJlcnN0ACNbTHhzYnRpL2FwaS9faW50ZXJuYWxPbmx5X05hbWVIYXNoO1sADnJlZ3VsYXJNZW1iZXJzcQB+AAd4cHVyACNbTHhzYnRpLmFwaS5faW50ZXJuYWxPbmx5X05hbWVIYXNoO0lagLbdlov0AgAAeHAAAAAAdXEAfgAJAAAAGnNyACB4c2J0aS5hcGkuX2ludGVybmFsT25seV9OYW1lSGFzaFsO9SJ2OFfPAgACSQAEaGFzaEwABG5hbWV0ABJMamF2YS9sYW5nL1N0cmluZzt4cIBij5h0AAZub3RpZnlzcQB+AAw9sbGldAAEd2FpdHNxAH4ADMJ184t0AA0kYXNJbnN0YW5jZU9mc3EAfgAMaHkXqXQADGJ1aWxkTG9hZGVyc3NxAH4ADJNKwpZ0AAZlcXVhbHNzcQB+AAxjfOUndAAHcHJvamVjdHNxAH4ADEwrL8B0AAxhc0luc3RhbmNlT2ZzcQB+AAxA0TX2dAAScHJvamVjdERlZmluaXRpb25zc3EAfgAM3LrM53QADHN5bmNocm9uaXplZHNxAH4ADDMcJG10AA0kaXNJbnN0YW5jZU9mc3EAfgAMK4GQGHQACW5vdGlmeUFsbHNxAH4ADDqi6KR0AAtyb290UHJvamVjdHNxAH4ADN2MiHN0AAxpc0luc3RhbmNlT2ZzcQB+AAy8Y41IdAACPT1zcQB+AAypnCWXdAAFY2xvbmVzcQB+AAytCvt8dAAZU3BhcmtHZW9JbmZlclByb2plY3RCdWlsZHNxAH4ADPXU0510AAh0b1N0cmluZ3NxAH4ADJg/8FR0AAIhPXNxAH4ADJo+RPZ0AAhwcm9qZWN0c3NxAH4ADIXeeU50AAhnZXRDbGFzc3NxAH4ADDSBrLd0AAJuZXNxAH4ADIAcWSJ0AAJlcXNxAH4ADDX9qoV0AAhzZXR0aW5nc3NxAH4ADIH/dsR0AAIjI3NxAH4ADM9IQMN0AAhmaW5hbGl6ZXNxAH4ADBwr6Lh0AAhoYXNoQ29kZXNyABN4c2J0aS5hcGkuU291cmNlQVBJuV6n+SkjOKQCAAJbAAtkZWZpbml0aW9uc3QAF1tMeHNidGkvYXBpL0RlZmluaXRpb247WwAIcGFja2FnZXN0ABRbTHhzYnRpL2FwaS9QYWNrYWdlO3hwdXIAF1tMeHNidGkuYXBpLkRlZmluaXRpb247iMlc57TjXg4CAAB4cAAAAAFzcgATeHNidGkuYXBpLkNsYXNzTGlrZYM0HKHfsJdsAgAETAAOZGVmaW5pdGlvblR5cGV0ABpMeHNidGkvYXBpL0RlZmluaXRpb25UeXBlO1sAEHNhdmVkQW5ub3RhdGlvbnN0ABNbTGphdmEvbGFuZy9TdHJpbmc7TAAIc2VsZlR5cGV0ABBMeHNidGkvYXBpL0xhenk7TAAJc3RydWN0dXJlcQB+AEt4cgAheHNidGkuYXBpLlBhcmFtZXRlcml6ZWREZWZpbml0aW9u+RFusdVQPOICAAFbAA50eXBlUGFyYW1ldGVyc3QAGltMeHNidGkvYXBpL1R5cGVQYXJhbWV0ZXI7eHIAFHhzYnRpLmFwaS5EZWZpbml0aW9uhyob6HFC40YCAARMAAZhY2Nlc3N0ABJMeHNidGkvYXBpL0FjY2VzcztbAAthbm5vdGF0aW9uc3QAF1tMeHNidGkvYXBpL0Fubm90YXRpb247TAAJbW9kaWZpZXJzdAAVTHhzYnRpL2FwaS9Nb2RpZmllcnM7TAAEbmFtZXEAfgANeHBzcgAQeHNidGkuYXBpLlB1YmxpY7pYPa5sLWBCAgAAeHIAEHhzYnRpLmFwaS5BY2Nlc3PdYpr4HWMxSAIAAHhwdXIAF1tMeHNidGkuYXBpLkFubm90YXRpb24765frGRD2jUgCAAB4cAAAAABzcgATeHNidGkuYXBpLk1vZGlmaWVyc8cREyFpnNwkAgABQgAFZmxhZ3N4cABxAH4ALXVyABpbTHhzYnRpLmFwaS5UeXBlUGFyYW1ldGVyO9ltJg8onfK2AgAAeHAAAAAAfnIAGHhzYnRpLmFwaS5EZWZpbml0aW9uVHlwZQAAAAAAAAAAEgAAeHIADmphdmEubGFuZy5FbnVtAAAAAAAAAAASAAB4cHQABk1vZHVsZXVyABNbTGphdmEubGFuZy5TdHJpbmc7rdJW5+kde0cCAAB4cAAAAABzcgATeHNidGkuU2FmZUxhenkkSW1wbFACLpOXl0A/AgADWgAIYml0bWFwJDBMAAJfdHQAEkxqYXZhL2xhbmcvT2JqZWN0O0wABGV2YWx0ABFMc2NhbGEvRnVuY3Rpb24wO3hyABZ4c2J0aS5hcGkuQWJzdHJhY3RMYXp503e1AV+756ACAAB4cABwc3IAIHhzYnRpLlNhZmVMYXp5JCRhbm9uZnVuJHN0cmljdCQxAAAAAAAAAAACAAFMAAd2YWx1ZSQxcQB+AGN4cHNyABN4c2J0aS5hcGkuRW1wdHlUeXBlvP2eRkk7iSQCAAB4cgAUeHNidGkuYXBpLlNpbXBsZVR5cGVyeGKIISO/QAIAAHhyAA54c2J0aS5hcGkuVHlwZT9q2SEWSarKAgAAeHBzcQB+AGIAcHNxAH4AZ3NyABN4c2J0aS5hcGkuU3RydWN0dXJlqar5gJNv2AACAANMAAhkZWNsYXJlZHEAfgBLTAAJaW5oZXJpdGVkcQB+AEtMAAdwYXJlbnRzcQB+AEt4cQB+AGtzcQB+AGIAcHNxAH4AZ3VxAH4ARgAAAABzcQB+AGIAcHNxAH4AZ3VxAH4ARgAAAABzcQB+AGIAcHNxAH4AZ3VyABFbTHhzYnRpLmFwaS5UeXBlO3T/pVp7+elBAgAAeHAAAAADc3IAFHhzYnRpLmFwaS5Qcm9qZWN0aW9u89KNVOlFpC0CAAJMAAJpZHEAfgANTAAGcHJlZml4dAAWTHhzYnRpL2FwaS9TaW1wbGVUeXBlO3hxAH4AanQABUJ1aWxkc3IAE3hzYnRpLmFwaS5TaW5nbGV0b278p1/4z1bkRgIAAUwABHBhdGh0ABBMeHNidGkvYXBpL1BhdGg7eHEAfgBqc3IADnhzYnRpLmFwaS5QYXRomz1cCM6lJ4QCAAFbAApjb21wb25lbnRzdAAaW0x4c2J0aS9hcGkvUGF0aENvbXBvbmVudDt4cHVyABpbTHhzYnRpLmFwaS5QYXRoQ29tcG9uZW50O0PaCXQtZxZ0AgAAeHAAAAACc3IADHhzYnRpLmFwaS5JZJgybIs3U8RAAgABTAACaWRxAH4ADXhyABd4c2J0aS5hcGkuUGF0aENvbXBvbmVudF+aIlsuhp+8AgAAeHB0AANzYnRzcgAOeHNidGkuYXBpLlRoaXPbCe2mzFpAXAIAAHhxAH4AiHNxAH4Ae3QABk9iamVjdHNxAH4Af3NxAH4AgnVxAH4AhQAAAANzcQB+AId0AARqYXZhc3EAfgCHdAAEbGFuZ3EAfgCMc3EAfgB7dAADQW55c3EAfgB/c3EAfgCCdXEAfgCFAAAAAnNxAH4Ah3QABXNjYWxhcQB+AIx1cgAUW0x4c2J0aS5hcGkuUGFja2FnZTtbExk3cKcnoQIAAHhwAAAAAHNyABV4c2J0aS5hcGkuQ29tcGlsYXRpb27t+uDDauigQgIAAkoACXN0YXJ0VGltZVsAB291dHB1dHN0ABpbTHhzYnRpL2FwaS9PdXRwdXRTZXR0aW5nO3hwAAABULRn4eR1cgAaW0x4c2J0aS5hcGkuT3V0cHV0U2V0dGluZzt/asLzp4elQgIAAHhwAAAAAXNyABd4c2J0aS5hcGkuT3V0cHV0U2V0dGluZ3rZmkd0+x17AgACTAAPb3V0cHV0RGlyZWN0b3J5cQB+AA1MAA9zb3VyY2VEaXJlY3RvcnlxAH4ADXhwdABbL1VzZXJzL2RhdmlkbWFydGluZXpyZWdvL0Rlc2t0b3AvZ2l0cmVwb3Mvc3RyYXRoL3Byb2plY3QvdGFyZ2V0L3NjYWxhLTIuMTAvc2J0LTAuMTMvY2xhc3Nlc3QAAS91cgACW0Ks8xf4BghU4AIAAHhwAAAAFK95Ce8VqEZ6gNM/hW0RMGMLjFSZ
+external apis:
+0 items
+source infos:
+3 items
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/BuildSettings.scala -> 
+AAAAAAAAAAA=
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Dependencies.scala -> 
+AAAAAAAAAAA=
+/Users/davidmartinezrego/Desktop/gitrepos/strath/project/Strath.scala -> 
+AAAAAAAAAAA=
+compilations:
+3 items
+0 -> rO0ABXNyABV4c2J0aS5hcGkuQ29tcGlsYXRpb27t+uDDauigQgIAAkoACXN0YXJ0VGltZVsAB291dHB1dHN0ABpbTHhzYnRpL2FwaS9PdXRwdXRTZXR0aW5nO3hwAAABULRn4eR1cgAaW0x4c2J0aS5hcGkuT3V0cHV0U2V0dGluZzt/asLzp4elQgIAAHhwAAAAAXNyABd4c2J0aS5hcGkuT3V0cHV0U2V0dGluZ3rZmkd0+x17AgACTAAPb3V0cHV0RGlyZWN0b3J5dAASTGphdmEvbGFuZy9TdHJpbmc7TAAPc291cmNlRGlyZWN0b3J5cQB+AAZ4cHQAWy9Vc2Vycy9kYXZpZG1hcnRpbmV6cmVnby9EZXNrdG9wL2dpdHJlcG9zL3N0cmF0aC9wcm9qZWN0L3RhcmdldC9zY2FsYS0yLjEwL3NidC0wLjEzL2NsYXNzZXN0AAEv
+1 -> rO0ABXNyABV4c2J0aS5hcGkuQ29tcGlsYXRpb27t+uDDauigQgIAAkoACXN0YXJ0VGltZVsAB291dHB1dHN0ABpbTHhzYnRpL2FwaS9PdXRwdXRTZXR0aW5nO3hwAAABULRuNrl1cgAaW0x4c2J0aS5hcGkuT3V0cHV0U2V0dGluZzt/asLzp4elQgIAAHhwAAAAAXNyABd4c2J0aS5hcGkuT3V0cHV0U2V0dGluZ3rZmkd0+x17AgACTAAPb3V0cHV0RGlyZWN0b3J5dAASTGphdmEvbGFuZy9TdHJpbmc7TAAPc291cmNlRGlyZWN0b3J5cQB+AAZ4cHQAWy9Vc2Vycy9kYXZpZG1hcnRpbmV6cmVnby9EZXNrdG9wL2dpdHJlcG9zL3N0cmF0aC9wcm9qZWN0L3RhcmdldC9zY2FsYS0yLjEwL3NidC0wLjEzL2NsYXNzZXN0AAEv
+2 -> rO0ABXNyABV4c2J0aS5hcGkuQ29tcGlsYXRpb27t+uDDauigQgIAAkoACXN0YXJ0VGltZVsAB291dHB1dHN0ABpbTHhzYnRpL2FwaS9PdXRwdXRTZXR0aW5nO3hwAAABULRuoMh1cgAaW0x4c2J0aS5hcGkuT3V0cHV0U2V0dGluZzt/asLzp4elQgIAAHhwAAAAAXNyABd4c2J0aS5hcGkuT3V0cHV0U2V0dGluZ3rZmkd0+x17AgACTAAPb3V0cHV0RGlyZWN0b3J5dAASTGphdmEvbGFuZy9TdHJpbmc7TAAPc291cmNlRGlyZWN0b3J5cQB+AAZ4cHQAWy9Vc2Vycy9kYXZpZG1hcnRpbmV6cmVnby9EZXNrdG9wL2dpdHJlcG9zL3N0cmF0aC9wcm9qZWN0L3RhcmdldC9zY2FsYS0yLjEwL3NidC0wLjEzL2NsYXNzZXN0AAEv
