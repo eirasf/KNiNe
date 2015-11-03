@@ -14,6 +14,11 @@ import scala.util.control.Breaks._
 import org.apache.spark.mllib.linalg.DenseVector
 import org.apache.spark.mllib.linalg.SparseVector
 
+class Hash(val values: Array[Integer]) extends Serializable {
+    override val hashCode = values.deep.hashCode
+    override def equals(obj:Any) = obj.isInstanceOf[Hash] && obj.asInstanceOf[Hash].values.deep == this.values.deep
+}
+
 object HelloWorld
 {
   private val OptimalW=4
@@ -41,15 +46,16 @@ object HelloWorld
       //Load data from file
       val data: RDD[(LabeledPoint, Long)] = MLUtils.loadLibSVMFile(sc, file).zipWithIndex()
       
-      //TODO Create index RDD if necessary
       //TODO Normalize if necessary
 
       val n=data.count()
       println("Dataset has "+n+" elements")
       
+      //TODO This should be done iteratively for different radiuses
+      
       val numTables=4
       val keyLength=5
-      val dimension=5
+      val dimension=5 //TODO Dimension should be either read from the dataset or input by the user
       val w=OptimalW
       
       //TODO Should be performed in Hasher.init(numTables, keyLength)
@@ -63,16 +69,17 @@ object HelloWorld
             gaussianVectors(i)(j)(k)=randomGenerator.nextGaussian()
           b(i)(j)=randomGenerator.nextDouble*w
         }
-      //Generate b
           
-      val hashRDD=data.map({case (point, index) =>
+      val hashRDD=data.flatMap({case (point, index) =>
                               //TODO This whole function should be in Hasher.computeHashes(Vector) 
-                              val hashes=ofDim[Integer](numTables, keyLength)
+                              var hashes=List[(Hash, Long)]()
                               for(i <- 0 until numTables)
+                              {
+                                val hash=new Array[Integer](keyLength)
                                 for (j <- 0 until keyLength)
                                 {
                                   var dotProd:Double=0
-                                  //TODO Take dot product to a function or used a prebuilt one
+                                  //TODO Take dot product to a function or use a prebuilt one
                                   if (point.features.isInstanceOf[DenseVector])
                                   {
                                     for (k <- 0 until dimension)
@@ -92,23 +99,31 @@ object HelloWorld
                                         dotProd+=values(k) * gaussianVectors(i)(j)(indices(k))
                                     }
                                   }
-                                  hashes(i)(j)=math.floor((dotProd + b(i)(j))/w).toInt
+                                  hash(j)=math.floor((dotProd + b(i)(j))/w).toInt
                                 }
-                              (index, hashes)});
+                                hashes=hashes:+(new Hash(hash),index)
+                              }
+                              hashes});
       
-      hashRDD.foreach({case (index, hashes) =>
+      /*
+      //Print hashes
+      hashRDD.foreach({case (hash, index) =>
                         var result=index+" - ("
-                        for (i <- 0 until numTables)
-                        {
-                          var strHash=""
-                          for (j <- 0 until keyLength)
-                          {
-                            strHash+=hashes(i)(j)+"#"
-                          }
-                          result+=strHash+", "
-                        }
+                        var strHash=""
+                        for (i <- 0 until keyLength)
+                          strHash+=hash.values(i)+"#"
+                        result+=strHash+", "
                         println(result+")")
                       })
+       */
+      
+
+      //TODO Discard single element hashes and for the rest get every possible pairing to build graph
+      //Should all distances be computed? Maybe there's no point in computing them if we still don't have enough neighbors for an example
+      //Should they be stored/cached?
+      //How will the graph be represented? Maybe an index RDD to be joined with the result of each step? 
+                      
+      hashRDD.groupByKey().foreach({case (hash, indices) => println(hash.values + " -> " + indices)})
       
       //Stop the Spark Context
       sc.stop()
