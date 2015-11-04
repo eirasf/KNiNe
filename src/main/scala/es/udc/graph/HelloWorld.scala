@@ -57,6 +57,7 @@ object HelloWorld
       val keyLength=5
       val dimension=5 //TODO Dimension should be either read from the dataset or input by the user
       val w=OptimalW
+      val numNeighbors=2
       
       //TODO Should be performed in Hasher.init(numTables, keyLength)
       val gaussianVectors=ofDim[Double](numTables, keyLength, dimension)
@@ -101,7 +102,7 @@ object HelloWorld
                                   }
                                   hash(j)=math.floor((dotProd + b(i)(j))/w).toInt
                                 }
-                                hashes=hashes:+(new Hash(hash),index)
+                                hashes=(new Hash(hash),index) :: hashes
                               }
                               hashes});
       
@@ -118,12 +119,24 @@ object HelloWorld
        */
       
 
-      //TODO Discard single element hashes and for the rest get every possible pairing to build graph
-      //Should all distances be computed? Maybe there's no point in computing them if we still don't have enough neighbors for an example
+      
+      //TODO Should all distances be computed? Maybe there's no point in computing them if we still don't have enough neighbors for an example
       //Should they be stored/cached?
       //How will the graph be represented? Maybe an index RDD to be joined with the result of each step? 
                       
-      hashRDD.groupByKey().foreach({case (hash, indices) => println(hash.values + " -> " + indices)})
+      val byKey=hashRDD.groupByKey()
+      byKey.foreach({case (hash, indices) => println(hash.values + " -> " + indices)})
+      
+      //Discard single element hashes and for the rest get every possible pairing to build graph
+      //TODO Posibly repartition after filter
+      byKey.filter(_._2.size>1)
+           //.repartition
+           .map({case (hash, indices) =>
+                       //TODO Take all this to a function bruteForce(indices)
+                       val arrayIndices=indices.toArray
+                       val graphBuilder=new BruteForceKNNGraphBuilder(numNeighbors)
+                       graphBuilder.computeGraph(arrayIndices)
+                       })
       
       //Stop the Spark Context
       sc.stop()
