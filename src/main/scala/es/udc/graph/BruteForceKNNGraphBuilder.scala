@@ -5,14 +5,15 @@ import scala.util.Random
 import scala.util.control.Breaks._
 import org.apache.spark.mllib.linalg.DenseVector
 import org.apache.spark.mllib.linalg.SparseVector
+import org.apache.spark.mllib.linalg.Vectors
 
 class BruteForceKNNGraphBuilder(pNumNeighbors:Int)
 {
   private val numNeighbors=pNumNeighbors
   
-  class IndexDistancePair(pIndex: Int, pDistance: Double)
+  class IndexDistancePair(pIndex: Long, pDistance: Double)
   {
-    var index: Int = pIndex
+    var index: Long = pIndex
     var distance: Double = pDistance
   }
   
@@ -21,7 +22,7 @@ class BruteForceKNNGraphBuilder(pNumNeighbors:Int)
     var maxDistance=Double.MinValue
     var listNeighbors=List[IndexDistancePair]()
     
-    def addElement(index:Int, distance:Double):Unit=
+    def addElement(index:Long, distance:Double):Unit=
     {
       if (listNeighbors.size<numNeighbors)
          {
@@ -56,26 +57,35 @@ class BruteForceKNNGraphBuilder(pNumNeighbors:Int)
     }
   }
   
-  def computeGraph(arrayIndices:Array[Long]/*Some sort of lookup, either function, structure to join, or table. Or have the points in the first parameter*/):(Int, List[(Int, Double)])=
+  def computeGraph(arrayIndices:Array[Long], lookup:LookupProvider):List[(Long, List[(Long, Double)])]=
   {
     val closestNeighbors=new Array[NeighborsForElement](arrayIndices.length) //For each element stores the farthest near neighbor so far and a list of near neighbors with their distances
-    //TODO Create class instead of tuple to be able to reassign
+    
     //The computed distances could be stored elsewhere so that there is no symmetric repetition
-    for(i <- 0 until arrayIndices.length-1)
+    for(i <- 0 until arrayIndices.length)
       closestNeighbors(i)=new NeighborsForElement()
-    for(i <- 0 until arrayIndices.length-1)
+    
+    var graph:List[(Long, List[(Long, Double)])]=Nil //Graph to be returned
+    for(i <- 0 until arrayIndices.length)
+    {
       for(j <- i+1 until arrayIndices.length)
       {
-         //TODO Retrieve elements from indices and compute distance
-         val d:Double=10.0
-         closestNeighbors(i).addElement(j, d)
-         closestNeighbors(j).addElement(i, d)
-       }
-     //TODO Unwrap the structure into graph edges and whatever more information is useful (distances, number of elements hit).
-    //return para que no se ponga nervioso
+         val feat1=lookup.lookup(i).features
+         val feat2=lookup.lookup(j).features
+         //TODO Different distances could be used
+         val d=Vectors.sqdist(feat1, feat2)
+         closestNeighbors(i).addElement(arrayIndices(j), d)
+         closestNeighbors(j).addElement(arrayIndices(i), d)
+      }
+      
+      //Unwrap the structure into graph edges
+      var neighbors:List[(Long, Double)]=Nil
+      for (j <- closestNeighbors(i).listNeighbors)
+        neighbors=(j.index, j.distance) :: neighbors
+      //TODO Add whatever more information is useful (distances, number of elements hit).
+      graph = (arrayIndices(i), neighbors) :: graph
+    }
     
-    (1, List[(Int, Double)]())
+    graph
   }
-  
-  private def addNeighbor():Unit={}
 }

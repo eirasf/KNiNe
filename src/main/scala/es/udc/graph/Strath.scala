@@ -19,7 +19,7 @@ class Hash(val values: Array[Integer]) extends Serializable {
     override def equals(obj:Any) = obj.isInstanceOf[Hash] && obj.asInstanceOf[Hash].values.deep == this.values.deep
 }
 
-object HelloWorld
+object Strath
 {
   private val OptimalW=4
   
@@ -70,7 +70,8 @@ object HelloWorld
             gaussianVectors(i)(j)(k)=randomGenerator.nextGaussian()
           b(i)(j)=randomGenerator.nextDouble*w
         }
-          
+      
+      //Maps each element to numTables (hash, index) pairs with hashes of keyLenght length.
       val hashRDD=data.flatMap({case (point, index) =>
                               //TODO This whole function should be in Hasher.computeHashes(Vector) 
                               var hashes=List[(Hash, Long)]()
@@ -121,22 +122,61 @@ object HelloWorld
 
       
       //TODO Should all distances be computed? Maybe there's no point in computing them if we still don't have enough neighbors for an example
-      //Should they be stored/cached?
-      //How will the graph be represented? Maybe an index RDD to be joined with the result of each step? 
-                      
-      val byKey=hashRDD.groupByKey()
-      byKey.foreach({case (hash, indices) => println(hash.values + " -> " + indices)})
+      //Should they be stored/cached? It may be enough to store a boolean that records if they have been computed. LRU Cache?
+      //How will the graph be represented? Maybe an index RDD to be joined with the result of each step?
+      
+      //Groups elements mapped to the same hash
+      val hashBuckets=hashRDD.groupByKey()
+      //Print buckets
+      println("Buckets:")
+      hashBuckets.foreach({case (hash, indices) => println(hash.values + " -> " + indices)})
+      
+      val lookup=new LookupProvider()
       
       //Discard single element hashes and for the rest get every possible pairing to build graph
-      //TODO Posibly repartition after filter
-      byKey.filter(_._2.size>1)
+      //TODO Possibly repartition after filter
+      val graph=hashBuckets.filter(_._2.size>1)
            //.repartition
-           .map({case (hash, indices) =>
-                       //TODO Take all this to a function bruteForce(indices)
-                       val arrayIndices=indices.toArray
-                       val graphBuilder=new BruteForceKNNGraphBuilder(numNeighbors)
-                       graphBuilder.computeGraph(arrayIndices)
+           .flatMap({case (hash, indices) =>
+                       //Remove duplicates from indices
+                       val arrayIndices=indices.toSet.toArray
+                       if (arrayIndices.length>1)
+                       {
+                         val graphBuilder=new BruteForceKNNGraphBuilder(numNeighbors)
+                         graphBuilder.computeGraph(arrayIndices, lookup)
+                       }
+                       else
+                         Nil
                        })
+           //Merge neighbors found for the same element in different hash buckets
+           .reduceByKey({case (neighbors1, neighbors2) =>
+                         var sNeighbors1=neighbors1.sortBy(_._2)
+                         var sNeighbors2=neighbors2.sortBy(_._2)
+                         
+                         var finalNeighbors:List[(Long, Double)]=Nil
+                         
+                         while(finalNeighbors.size<numNeighbors && (!sNeighbors1.isEmpty || !sNeighbors2.isEmpty))
+                         {
+                           if (sNeighbors2.isEmpty || (!sNeighbors1.isEmpty && sNeighbors1.head._2<sNeighbors2.head._2))
+                           {
+                             finalNeighbors=sNeighbors1.head :: finalNeighbors
+                             sNeighbors1=sNeighbors1.tail
+                           }
+                           else
+                           {
+                             finalNeighbors=sNeighbors2.head :: finalNeighbors
+                             sNeighbors2=sNeighbors2.tail
+                           }
+                         }
+                         finalNeighbors
+                         })
+      
+      //Print graph
+      println("There goes the graph:")
+      graph.foreach({case (elementIndex, neighbors) =>
+                      for(n <- neighbors)
+                        println(elementIndex+"->"+n._1+"("+n._2+")")
+                    })
       
       //Stop the Spark Context
       sc.stop()
