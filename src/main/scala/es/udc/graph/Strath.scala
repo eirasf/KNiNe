@@ -14,15 +14,8 @@ import scala.util.control.Breaks._
 import org.apache.spark.mllib.linalg.DenseVector
 import org.apache.spark.mllib.linalg.SparseVector
 
-class Hash(val values: Array[Integer]) extends Serializable {
-    override val hashCode = values.deep.hashCode
-    override def equals(obj:Any) = obj.isInstanceOf[Hash] && obj.asInstanceOf[Hash].values.deep == this.values.deep
-}
-
 object Strath
 {
-  private val OptimalW=4
-  
     def main(args: Array[String])
     {
       if (args.length <= 0)
@@ -53,59 +46,15 @@ object Strath
       
       //TODO This should be done iteratively for different radiuses
       
-      val numTables=4
-      val keyLength=5
       val dimension=5 //TODO Dimension should be either read from the dataset or input by the user
-      val w=OptimalW
       val numNeighbors=2
       
-      //TODO Should be performed in Hasher.init(numTables, keyLength)
-      val gaussianVectors=ofDim[Double](numTables, keyLength, dimension)
-      val b=ofDim[Double](numTables, keyLength)
-      val randomGenerator=new Random()
-      for(i <- 0 until numTables)
-        for (j <- 0 until keyLength)
-        {
-          for (k <- 0 until dimension)
-            gaussianVectors(i)(j)(k)=randomGenerator.nextGaussian()
-          b(i)(j)=randomGenerator.nextDouble*w
-        }
+      val hasher=new EuclideanLSHasher(dimension)
       
       //Maps each element to numTables (hash, index) pairs with hashes of keyLenght length.
       val hashRDD=data.flatMap({case (point, index) =>
-                              //TODO This whole function should be in Hasher.computeHashes(Vector) 
-                              var hashes=List[(Hash, Long)]()
-                              for(i <- 0 until numTables)
-                              {
-                                val hash=new Array[Integer](keyLength)
-                                for (j <- 0 until keyLength)
-                                {
-                                  var dotProd:Double=0
-                                  //TODO Take dot product to a function or use a prebuilt one
-                                  if (point.features.isInstanceOf[DenseVector])
-                                  {
-                                    for (k <- 0 until dimension)
-                                      dotProd+=point.features(k) * gaussianVectors(i)(j)(k)
-                                  }
-                                  else //SparseVector
-                                  {
-                                    val sparse=point.features.asInstanceOf[SparseVector]
-                                    val indices=sparse.indices
-                                    val values=sparse.values
-                                    
-                                    for (k <- 0 until indices.length)
-                                    {
-                                      //if (indices(k)>=dimension)
-                                      //  break
-                                      if (indices(k)<dimension)
-                                        dotProd+=values(k) * gaussianVectors(i)(j)(indices(k))
-                                    }
-                                  }
-                                  hash(j)=math.floor((dotProd + b(i)(j))/w).toInt
-                                }
-                                hashes=(new Hash(hash),index) :: hashes
-                              }
-                              hashes});
+                                hasher.getHashes(point.features, index)
+                              });
       
       /*
       //Print hashes
@@ -131,7 +80,8 @@ object Strath
       println("Buckets:")
       hashBuckets.foreach({case (hash, indices) => println(hash.values + " -> " + indices)})
       
-      val lookup=new LookupProvider()
+      //TODO It may be better to have the indices assigned to the data by the lookup provider
+      val lookup=new BroadcastLookupProvider(data, sc)
       
       //Discard single element hashes and for the rest get every possible pairing to build graph
       //TODO Possibly repartition after filter
