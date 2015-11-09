@@ -13,6 +13,8 @@ import scala.util.Random
 import scala.util.control.Breaks._
 import org.apache.spark.mllib.linalg.DenseVector
 import org.apache.spark.mllib.linalg.SparseVector
+import es.udc.graph.utils.GraphUtils
+import org.apache.spark.mllib.linalg.Vectors
 
 object Strath
 {
@@ -80,10 +82,45 @@ object Strath
       println("Buckets:")
       hashBuckets.foreach({case (hash, indices) => println(hash.values + " -> " + indices)})
       
+      /*GRAPH VERSION*/
+      
+      val closeEdges=hashBuckets.filter(_._2.size>1)
+                           //.repartition
+                           .flatMap({case (hash, indices) =>
+                                       //Remove duplicates from indices
+                                       val arrayIndices=indices.toSet.toArray
+                                       if (arrayIndices.length>1)
+                                       {
+                                         var list:List[Pair[Long, Long]]=List()
+                                         //Cartesian product
+                                         for (i <- 0 until arrayIndices.length)
+                                           for (j <- i+1 until arrayIndices.length)
+                                           {
+                                             list=(arrayIndices(i), arrayIndices(j)) :: (arrayIndices(j), arrayIndices(i)) :: list
+                                           }
+                                         
+                                         list
+                                       }
+                                       else
+                                         Nil
+                                       })
+                                      
+      val graph=GraphUtils.calculateNearest(data,
+                                            numNeighbors,
+                                            {case (x,y) => Vectors.sqdist(x.features, y.features)},
+                                            closeEdges)
+                                            
+      println("There goes the graph:")
+      graph.foreach(println(_))
+      /**/
+      
+      
+      /* LOOKUP VERSION
       //TODO It may be better to have the indices assigned to the data by the lookup provider
       val lookup=new BroadcastLookupProvider(data, sc)
       
       //Discard single element hashes and for the rest get every possible pairing to build graph
+      
       //TODO Possibly repartition after filter
       val graph=hashBuckets.filter(_._2.size>1)
            //.repartition
@@ -121,12 +158,14 @@ object Strath
                          finalNeighbors
                          })
       
+      
       //Print graph
       println("There goes the graph:")
       graph.foreach({case (elementIndex, neighbors) =>
                       for(n <- neighbors)
                         println(elementIndex+"->"+n._1+"("+n._2+")")
                     })
+      */
       
       //Stop the Spark Context
       sc.stop()

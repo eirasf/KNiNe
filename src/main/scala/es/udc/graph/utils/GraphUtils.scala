@@ -17,7 +17,7 @@ object GraphUtils {
     }
   }
 
-  def combineNeigbors(k: Int)(l1 : Array[Peer])(l2 : Array[Peer]) : Array[Peer] = {
+  def combineNeighbors(k: Int)(l1 : Array[Peer])(l2 : Array[Peer]): Array[Peer] = {
     val fusioned = l1++l2
     val median = findKMedian(fusioned, k)(chooseMedianOfMedians[Peer])
     fusioned.filter(el => el <= median)
@@ -30,7 +30,7 @@ object GraphUtils {
     val edges = connections.map{case (a, b) => Edge(a, b, 0)}
     val graph = Graph(vertices, edges)
     graph.aggregateMessages[Array[Peer]](ctx => ctx.sendToDst(Array(Peer(ctx.srcId, distance(ctx.srcAttr, ctx.dstAttr)))),
-      combineNeigbors(k)(_)(_))
+      combineNeighbors(k)(_)(_))
   }
 
 }

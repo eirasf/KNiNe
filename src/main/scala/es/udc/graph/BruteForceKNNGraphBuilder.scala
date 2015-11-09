@@ -70,10 +70,13 @@ class BruteForceKNNGraphBuilder(pNumNeighbors:Int)
     {
       for(j <- i+1 until arrayIndices.length)
       {
-         val feat1=lookup.lookup(i).features
-         val feat2=lookup.lookup(j).features
+         val feat1=lookup.lookup(arrayIndices(i)).features
+         val feat2=lookup.lookup(arrayIndices(j)).features
          //TODO Different distances could be used
          val d=Vectors.sqdist(feat1, feat2)
+         
+         //println("D("+arrayIndices(i)+"<->"+arrayIndices(j)+")="+d+"#"+feat1.toString()+feat2.toString())
+         
          closestNeighbors(i).addElement(arrayIndices(j), d)
          closestNeighbors(j).addElement(arrayIndices(i), d)
       }
