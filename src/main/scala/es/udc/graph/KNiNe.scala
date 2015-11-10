@@ -34,7 +34,7 @@ object sparkContextSingleton
   }  
 }
 
-object Strath
+object KNiNe
 {
     def main(args: Array[String])
     {
@@ -58,10 +58,9 @@ object Strath
       val dimension=data.map(_._1.features.size).max() //TODO Dimension should be either read from the dataset or input by the user
       println("Dataset has "+n+" elements and dimension +"+dimension)
       
-      //TODO This should be done iteratively for different radiuses
       val numNeighbors=2 //TODO Should be input from user
       
-      /*GRAPH VERSION
+      /* GRAPH VERSION 
       
       val graph=LSHGraphXKNNGraphBuilder.getGraph(data, numNeighbors, dimension)
       println("There goes the graph:")
@@ -70,7 +69,7 @@ object Strath
       */
       
       
-      /* LOOKUP VERSION
+      /* LOOKUP VERSION */
       
       val graph=LSHLookupKNNGraphBuilder.computeGraph(data, numNeighbors, dimension)
       //Print graph
@@ -79,9 +78,9 @@ object Strath
                       for(n <- neighbors)
                         println(elementIndex+"->"+n._1+"("+n._2+")")
                     })
-      */
+      /**/
                     
-      /* BRUTEFORCE VERSION */
+      /* BRUTEFORCE VERSION
       
       val graph=LocalBruteForceKNNGraphBuilder.computeGraph(data, numNeighbors)
       //Print graph
@@ -90,7 +89,7 @@ object Strath
                       for(n <- neighbors)
                         println(elementIndex+"->"+n._1+"("+n._2+")")
                     })
-      /**/
+      */
       
       //Stop the Spark Context
       sc.stop()

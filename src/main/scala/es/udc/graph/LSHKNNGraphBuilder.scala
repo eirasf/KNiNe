@@ -11,11 +11,13 @@ import es.udc.graph.utils.GraphUtils
 
 abstract class LSHKNNGraphBuilder
 {
-  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasher:Hasher):RDD[(Long, List[(Long, Double)])]=
+  protected final def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasher:Hasher):RDD[(Long, List[(Long, Double)])]=
   {
+    //TODO This should be done iteratively for different radiuses
+    
     //Maps each element to numTables (hash, index) pairs with hashes of keyLenght length.
     val hashRDD=data.flatMap({case (point, index) =>
-                              hasher.getHashes(point.features, index)
+                              hasher.getHashes(point.features, index) //TODO Hash should take radius into account
                             });
     
     /*
@@ -43,7 +45,12 @@ abstract class LSHKNNGraphBuilder
     hashBuckets.foreach({case (hash, indices) => println(hash.values + " -> " + indices)})
     */
     
+    //TODO Evaluate bucket size and increase/decrease radius without bruteforcing if necessary.
+    
     getGraphFromBuckets(data, hashBuckets, numNeighbors)
+    
+    //TODO Merge generate graph with existing one while checking neighbors of destination vertices.
+    //TODO Simplify dataset
   }
   
   def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int):RDD[(Long, List[(Long, Double)])]=computeGraph(data,
