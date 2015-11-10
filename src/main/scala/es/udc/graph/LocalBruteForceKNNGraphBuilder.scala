@@ -6,19 +6,21 @@ import scala.util.control.Breaks._
 import org.apache.spark.mllib.linalg.DenseVector
 import org.apache.spark.mllib.linalg.SparseVector
 import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.rdd.RDD
+import org.apache.spark.mllib.regression.LabeledPoint
 
-class BruteForceKNNGraphBuilder(pNumNeighbors:Int)
+object LocalBruteForceKNNGraphBuilder
 {
-  private val numNeighbors=pNumNeighbors
-  
   class IndexDistancePair(pIndex: Long, pDistance: Double)
   {
     var index: Long = pIndex
     var distance: Double = pDistance
   }
   
-  class NeighborsForElement()
+  class NeighborsForElement(pNumNeighbors:Int)
   {
+    private var numNeighbors=pNumNeighbors
+    
     var maxDistance=Double.MinValue
     var listNeighbors=List[IndexDistancePair]()
     
@@ -57,13 +59,13 @@ class BruteForceKNNGraphBuilder(pNumNeighbors:Int)
     }
   }
   
-  def computeGraph(arrayIndices:Array[Long], lookup:LookupProvider):List[(Long, List[(Long, Double)])]=
+  def computeGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int):List[(Long, List[(Long, Double)])]=
   {
     val closestNeighbors=new Array[NeighborsForElement](arrayIndices.length) //For each element stores the farthest near neighbor so far and a list of near neighbors with their distances
     
     //The computed distances could be stored elsewhere so that there is no symmetric repetition
     for(i <- 0 until arrayIndices.length)
-      closestNeighbors(i)=new NeighborsForElement()
+      closestNeighbors(i)=new NeighborsForElement(numNeighbors)
     
     var graph:List[(Long, List[(Long, Double)])]=Nil //Graph to be returned
     for(i <- 0 until arrayIndices.length)
@@ -90,5 +92,10 @@ class BruteForceKNNGraphBuilder(pNumNeighbors:Int)
     }
     
     graph
+  }
+  
+  def computeGraph(data:RDD[(LabeledPoint, Long)], numNeighbors:Int):List[(Long, List[(Long, Double)])]=
+  {
+    computeGraph(data.map(_._2).collect(), new BroadcastLookupProvider(data), numNeighbors)
   }
 }

@@ -16,6 +16,24 @@ import org.apache.spark.mllib.linalg.SparseVector
 import es.udc.graph.utils.GraphUtils
 import org.apache.spark.mllib.linalg.Vectors
 
+object sparkContextSingleton
+{
+  @transient private var instance: SparkContext = _
+  private val conf : SparkConf = new SparkConf().setAppName("TestStrath")
+                                                .setMaster("local")
+                                                .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+                                                .set("spark.broadcast.factory", "org.apache.spark.broadcast.HttpBroadcastFactory")
+                                                //.set("spark.eventLog.enabled", "true")
+                                                //.set("spark.eventLog.dir","file:///home/eirasf/Escritorio/Tmp-work/sparklog-local")
+
+  def getInstance(): SparkContext=
+  {
+    if (instance == null)
+      instance = new SparkContext(conf)
+    instance
+  }  
+}
+
 object Strath
 {
     def main(args: Array[String])
@@ -26,17 +44,10 @@ object Strath
         return
       }
       
-      println("STARTING")
-      
       var file=args(0)
       
       //Set up Spark Context
-      val conf = new SparkConf().setAppName("TestStrath").setMaster("local")
-      conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-      conf.set("spark.broadcast.factory", "org.apache.spark.broadcast.HttpBroadcastFactory")
-//      conf.set("spark.eventLog.enabled", "true")
-//      conf.set("spark.eventLog.dir","file:///home/eirasf/Escritorio/Tmp-work/sparklog-local")
-      val sc=new SparkContext(conf)
+      val sc=sparkContextSingleton.getInstance()
       
       //Load data from file
       val data: RDD[(LabeledPoint, Long)] = MLUtils.loadLibSVMFile(sc, file).zipWithIndex()
@@ -44,121 +55,24 @@ object Strath
       //TODO Normalize if necessary
 
       val n=data.count()
-      println("Dataset has "+n+" elements")
+      val dimension=data.map(_._1.features.size).max() //TODO Dimension should be either read from the dataset or input by the user
+      println("Dataset has "+n+" elements and dimension +"+dimension)
       
       //TODO This should be done iteratively for different radiuses
+      val numNeighbors=2 //TODO Should be input from user
       
-      val dimension=5 //TODO Dimension should be either read from the dataset or input by the user
-      val numNeighbors=2
+      /*GRAPH VERSION
       
-      val hasher=new EuclideanLSHasher(dimension)
-      
-      //Maps each element to numTables (hash, index) pairs with hashes of keyLenght length.
-      val hashRDD=data.flatMap({case (point, index) =>
-                                hasher.getHashes(point.features, index)
-                              });
-      
-      /*
-      //Print hashes
-      hashRDD.foreach({case (hash, index) =>
-                        var result=index+" - ("
-                        var strHash=""
-                        for (i <- 0 until keyLength)
-                          strHash+=hash.values(i)+"#"
-                        result+=strHash+", "
-                        println(result+")")
-                      })
-       */
-      
-
-      
-      //TODO Should all distances be computed? Maybe there's no point in computing them if we still don't have enough neighbors for an example
-      //Should they be stored/cached? It may be enough to store a boolean that records if they have been computed. LRU Cache?
-      //How will the graph be represented? Maybe an index RDD to be joined with the result of each step?
-      
-      //Groups elements mapped to the same hash
-      val hashBuckets=hashRDD.groupByKey()
-      //Print buckets
-      println("Buckets:")
-      hashBuckets.foreach({case (hash, indices) => println(hash.values + " -> " + indices)})
-      
-      /*GRAPH VERSION*/
-      
-      val closeEdges=hashBuckets.filter(_._2.size>1)
-                           //.repartition
-                           .flatMap({case (hash, indices) =>
-                                       //Remove duplicates from indices
-                                       val arrayIndices=indices.toSet.toArray
-                                       if (arrayIndices.length>1)
-                                       {
-                                         var list:List[Pair[Long, Long]]=List()
-                                         //Cartesian product
-                                         for (i <- 0 until arrayIndices.length)
-                                           for (j <- i+1 until arrayIndices.length)
-                                           {
-                                             list=(arrayIndices(i), arrayIndices(j)) :: (arrayIndices(j), arrayIndices(i)) :: list
-                                           }
-                                         
-                                         list
-                                       }
-                                       else
-                                         Nil
-                                       })
-                                      
-      val graph=GraphUtils.calculateNearest(data,
-                                            numNeighbors,
-                                            {case (x,y) => Vectors.sqdist(x.features, y.features)},
-                                            closeEdges)
-                                            
+      val graph=LSHGraphXKNNGraphBuilder.getGraph(data, numNeighbors, dimension)
       println("There goes the graph:")
       graph.foreach(println(_))
-      /**/
+      
+      */
       
       
       /* LOOKUP VERSION
-      //TODO It may be better to have the indices assigned to the data by the lookup provider
-      val lookup=new BroadcastLookupProvider(data, sc)
       
-      //Discard single element hashes and for the rest get every possible pairing to build graph
-      
-      //TODO Possibly repartition after filter
-      val graph=hashBuckets.filter(_._2.size>1)
-           //.repartition
-           .flatMap({case (hash, indices) =>
-                       //Remove duplicates from indices
-                       val arrayIndices=indices.toSet.toArray
-                       if (arrayIndices.length>1)
-                       {
-                         val graphBuilder=new BruteForceKNNGraphBuilder(numNeighbors)
-                         graphBuilder.computeGraph(arrayIndices, lookup)
-                       }
-                       else
-                         Nil
-                       })
-           //Merge neighbors found for the same element in different hash buckets
-           .reduceByKey({case (neighbors1, neighbors2) =>
-                         var sNeighbors1=neighbors1.sortBy(_._2)
-                         var sNeighbors2=neighbors2.sortBy(_._2)
-                         
-                         var finalNeighbors:List[(Long, Double)]=Nil
-                         
-                         while(finalNeighbors.size<numNeighbors && (!sNeighbors1.isEmpty || !sNeighbors2.isEmpty))
-                         {
-                           if (sNeighbors2.isEmpty || (!sNeighbors1.isEmpty && sNeighbors1.head._2<sNeighbors2.head._2))
-                           {
-                             finalNeighbors=sNeighbors1.head :: finalNeighbors
-                             sNeighbors1=sNeighbors1.tail
-                           }
-                           else
-                           {
-                             finalNeighbors=sNeighbors2.head :: finalNeighbors
-                             sNeighbors2=sNeighbors2.tail
-                           }
-                         }
-                         finalNeighbors
-                         })
-      
-      
+      val graph=LSHLookupKNNGraphBuilder.computeGraph(data, numNeighbors, dimension)
       //Print graph
       println("There goes the graph:")
       graph.foreach({case (elementIndex, neighbors) =>
@@ -166,6 +80,17 @@ object Strath
                         println(elementIndex+"->"+n._1+"("+n._2+")")
                     })
       */
+                    
+      /* BRUTEFORCE VERSION */
+      
+      val graph=LocalBruteForceKNNGraphBuilder.computeGraph(data, numNeighbors)
+      //Print graph
+      println("There goes the graph:")
+      graph.foreach({case (elementIndex, neighbors) =>
+                      for(n <- neighbors)
+                        println(elementIndex+"->"+n._1+"("+n._2+")")
+                    })
+      /**/
       
       //Stop the Spark Context
       sc.stop()

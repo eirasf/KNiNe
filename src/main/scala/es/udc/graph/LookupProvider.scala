@@ -24,7 +24,7 @@ class DummyLookupProvider() extends LookupProvider
   }
 }
 
-class BroadcastLookupProvider(dataset: RDD[(LabeledPoint, Long)], sc:SparkContext) extends LookupProvider
+class BroadcastLookupProvider(dataset: RDD[(LabeledPoint, Long)]) extends LookupProvider
 {
   /* Test to check the order of the collected items
   val test=dataset.sortBy(_._2).collect()
@@ -32,7 +32,7 @@ class BroadcastLookupProvider(dataset: RDD[(LabeledPoint, Long)], sc:SparkContex
     println(x)*/
   dataset.count().toInt //This should throw an exception if the dataset is too large
   
-  val bData=sc.broadcast(dataset.sortBy(_._2).collect())
+  val bData=sparkContextSingleton.getInstance().broadcast(dataset.sortBy(_._2).collect())
   
   def lookup(index:Long):LabeledPoint=
   {
