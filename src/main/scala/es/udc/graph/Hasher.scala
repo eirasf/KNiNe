@@ -21,7 +21,7 @@ trait Hasher extends Serializable
   
   this._init()
   
-  def getHashes(point:Vector, index:Long):List[(Hash, Long)]
+  def getHashes(point:Vector, index:Long, radius:Double):List[(Hash, Long)]
 }
 
 class EuclideanLSHasher(dimension:Int) extends Hasher 
@@ -47,7 +47,7 @@ class EuclideanLSHasher(dimension:Int) extends Hasher
   }
   this._init()
   
-  override def getHashes(point:Vector, index:Long):List[(Hash, Long)]=
+  override def getHashes(point:Vector, index:Long, radius:Double):List[(Hash, Long)]=
   {
     var hashes=List[(Hash, Long)]()
     for(i <- 0 until numTables)
@@ -75,6 +75,7 @@ class EuclideanLSHasher(dimension:Int) extends Hasher
             if (indices(k)<dimension)
               dotProd+=values(k) * gaussianVectors(i)(j)(indices(k))
           }
+          dotProd/=radius
         }
         hash(j)=math.floor((dotProd + b(i)(j))/w).toInt
       }
