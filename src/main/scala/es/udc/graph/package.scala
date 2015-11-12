@@ -5,4 +5,10 @@ package es.udc
  */
 package object graph {
 
+  case class Neighbor(id:Long, dist:Double) extends Ordered[Neighbor] {
+    override def compare(that: Neighbor): Int = {
+      return (dist - that.dist).toInt
+    }
+  }
+
 }
