@@ -91,4 +91,21 @@ class GraphUtilsTest extends Specification{
       }
     }
   }
+
+  "findKMedian" should {
+    "find the kth element in a list under repetition" in {
+      var medians = List(2,2,2,2,5)
+        .permutations.map{case per => findKMedian(per.toArray, 2)(chooseMedianOfMedians[Int])}
+      assert(medians.forall(a => a == 2))
+
+      medians = List(2,2,2,2,5)
+        .permutations.map{case per => findKMedian(per.toArray, 4)(chooseMedianOfMedians[Int])}
+      assert(medians.forall(a => a == 2))
+
+      medians = List(2,2,2,2,5)
+        .permutations.map{case per => findKMedian(per.toArray, 5)(chooseMedianOfMedians[Int])}
+      assert(medians.forall(a => a == 5))
+    }
+  }
+
 }

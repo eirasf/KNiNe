@@ -21,11 +21,15 @@ object Selection {
 
   @tailrec def findKMedian[T <% Ordered[T]](arr: Array[T], k: Int)(choosePivot: Array[T] => T)(implicit m: ClassTag[T]): T = {
     val a      = choosePivot(arr)
-    val (s, b) = arr partition (a >=)
+    val (s, b) = arr partition (_ < a)
 
-    if (s.size == k){
+    if (s.isEmpty) {
+      val (s, b) = arr partition (a ==)
+      if (s.size >= k) a
+      else findKMedian(b, k - s.size)(choosePivot)
+    } else if (s.size == k-1){
       return a
-    } else if (k < s.size) {
+    } else if (k <= s.size) {
       findKMedian(s, k)(choosePivot)
     } else {
       findKMedian(b, k - s.size)(choosePivot)
