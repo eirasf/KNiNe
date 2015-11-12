@@ -52,8 +52,63 @@ object KNiNe
       //Load data from file
       val data: RDD[(LabeledPoint, Long)] = MLUtils.loadLibSVMFile(sc, file).zipWithIndex()
       
-      //TODO Normalize if necessary
-
+      /*
+      //Normalize if necessary
+      val maxMins=data.map({case (point, index) => (point.features.toArray, point.features.toArray)})
+                      .reduce({case ((max1, min1), (max2, min2)) =>
+                                var maxLength=max1.length
+                                var longMax=max1
+                                var longMin=min1
+                                var shortMax=max2
+                                var shortMin=min2
+                                if (max2.length>maxLength)
+                                {
+                                  maxLength=max2.length
+                                  longMax=max2
+                                  longMin=min2
+                                  shortMax=max1
+                                  shortMin=min1
+                                }
+                                for (i <- 0 until maxLength)
+                                {
+                                  if (i<shortMax.length)
+                                  {
+                                    if (longMax(i)<shortMax(i))
+                                      longMax(i)=shortMax(i)
+                                    if (longMin(i)>shortMin(i))
+                                      longMin(i)=shortMin(i)
+                                  }
+                                }
+                                (longMax, longMin)
+                              })
+      val ranges=new Array[Double](maxMins._1.length)
+      for (i <- 0 until ranges.length)
+        ranges(i)=maxMins._1(i)-maxMins._2(i)
+      
+      val normalizedData=data.map({case (point, index) =>
+                                      val feats=point.features
+                                      if (feats.isInstanceOf[DenseVector])
+                                      {
+                                        val dense=feats.asInstanceOf[DenseVector].values
+                                        for (i <- 0 until dense.size)
+                                          dense(i)=(dense(i)-maxMins._2(i))/ranges(i)
+                                      }
+                                      else
+                                      {
+                                        val sparse=feats.asInstanceOf[SparseVector]
+                                        val indices=sparse.indices
+                                        val values=sparse.values
+                                        
+                                        for (i <- 0 until indices.length)
+                                          values(i)=(values(i)-maxMins._2(indices(i)))/ranges(indices(i))
+                                      }
+                                      (point, index)
+                                  })
+      
+      println("Normalized dataset")
+      normalizedData.foreach(println(_))
+      */
+      
       val n=data.count()
       val dimension=data.map(_._1.features.size).max() //TODO Dimension should be either read from the dataset or input by the user
       println("Dataset has "+n+" elements and dimension +"+dimension)
