@@ -21,7 +21,7 @@ abstract class LSHKNNGraphBuilder
     //DEBUG
     var i=0
     
-    while(!currentData.isEmpty() && (i<10)/*DEBUG*/)
+    while(!currentData.isEmpty() && (i<5)/*DEBUG*/)
     {
       //Maps each element to numTables (hash, index) pairs with hashes of keyLenght length.
       val hashRDD=currentData.flatMap({case (index, point) =>
@@ -78,12 +78,34 @@ abstract class LSHKNNGraphBuilder
                                                             f(neighbors1, neighbors2, numNeighbors)
                                                           })
       }
+      //TODO Check for duplicates
       //Simplify dataset
       //Remove only elements that already have all their neighbors
       val completeNodes=fullGraph.filter({case (index, list) => list.size>=numNeighbors})
-      //TODO Remove only elements that link to an element that remains in the dataset
-      currentData=currentData.leftOuterJoin(completeNodes).flatMap({case (index, (neighbors1, neighbors2)) =>
-                                                                  if (neighbors2==None)
+      println("Complete nodes:")
+      completeNodes.foreach(println)
+      //Still have to filter out those that link to an element that will be removed
+      val deletableElements=completeNodes.flatMap({case (index, list) =>
+                                                     list.map({case (dest, dist) => (dest, index)})
+                                                  })
+                                        //Join with the full graph, to use edges that are in there (TODO CHECK)
+                                        .join(fullGraph)
+                                        .flatMap({case (index, (from, list)) => 
+                                                    list.map({case (v, dist) => (index, v)})
+                                                 })
+                                        .leftOuterJoin(completeNodes)
+                                        .flatMap({case (dest, (origin, list)) =>
+                                                    if (list==None)
+                                                      Some((origin, 1))
+                                                    else
+                                                      None
+                                                  })
+                                        .reduceByKey({case (n1, n2) => 1})
+      println("To be removed:")
+      deletableElements.foreach(println)
+      //TODO Remove only elements that are very "surrounded" (i.e. they landed in various large buckets)
+      currentData=currentData.leftOuterJoin(deletableElements).flatMap({case (index, (neighbors1, n)) =>
+                                                                  if (n==None)
                                                                     Some((index, neighbors1))
                                                                   else
                                                                     None
