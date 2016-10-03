@@ -103,13 +103,14 @@ abstract class LSHKNNGraphBuilder
                                         .reduceByKey({case (n1, n2) => 1})
       println("To be removed:")
       deletableElements.foreach(println)
-      //TODO Remove only elements that are very "surrounded" (i.e. they landed in various large buckets)
+      //Remove deletable elements from dataset
       currentData=currentData.leftOuterJoin(deletableElements).flatMap({case (index, (neighbors1, n)) =>
                                                                   if (n==None)
                                                                     Some((index, neighbors1))
                                                                   else
                                                                     None
                                                                     })
+      //TODO More advanced simplifications can be done, such as removing only elements that are very "surrounded" (i.e. they landed in various large buckets)
       //TODO Possibly repartition
       currentData.cache()
       //Increment radius

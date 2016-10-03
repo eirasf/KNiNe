@@ -1,6 +1,6 @@
 package es.udc.graph.test
 
-import org.specs2.mutable.Specification
+//import org.specs2.mutable.Specification
 
 import es.udc.graph.utils.GraphUtils._
 import es.udc.graph.utils.Selection._
@@ -11,7 +11,7 @@ import scala.util.Random
 /**
  * Created by davidmartinezrego on 06/11/15.
  */
-class GraphUtilsTest extends Specification{
+class GraphUtilsTest{/* extends Specification{
 
   "medianUpTo5" should {
     "find the median of 5 elements" in {
@@ -106,6 +106,6 @@ class GraphUtilsTest extends Specification{
         .permutations.map{case per => findKMedian(per.toArray, 5)(chooseMedianOfMedians[Int])}
       assert(medians.forall(a => a == 5))
     }
-  }
+  }*/
 
 }

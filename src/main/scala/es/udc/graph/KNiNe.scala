@@ -15,6 +15,7 @@ import org.apache.spark.mllib.linalg.DenseVector
 import org.apache.spark.mllib.linalg.SparseVector
 import es.udc.graph.utils.GraphUtils
 import org.apache.spark.mllib.linalg.Vectors
+import org.apache.log4j.{Level, Logger}
 
 object sparkContextSingleton
 {
@@ -48,6 +49,10 @@ object KNiNe
       
       //Set up Spark Context
       val sc=sparkContextSingleton.getInstance()
+      
+      //Stop annooying INFO messages
+      val rootLogger = Logger.getRootLogger()
+      rootLogger.setLevel(Level.WARN)
       
       //Load data from file
       val data: RDD[(LabeledPoint, Long)] = MLUtils.loadLibSVMFile(sc, file).zipWithIndex()

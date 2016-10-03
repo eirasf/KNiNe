@@ -27,8 +27,11 @@ object GraphUtils {
     val vertices = data.map{case a => a.swap}
     val edges = connections.map{case (a, b) => Edge(a, b, 0)}
     val graph = Graph(vertices, edges)
-    graph.aggregateMessages[List[Neighbor]](ctx => {val dist = distance(ctx.srcAttr, ctx.dstAttr); ctx.sendToDst(List(Neighbor(ctx.srcId, dist)))},
-      combineNeighbors(k)(_)(_)).map {case a => (a._1, a._2)}
+    graph.aggregateMessages[List[Neighbor]](ctx => {val dist = distance(ctx.srcAttr, ctx.dstAttr);
+                                                    ctx.sendToDst(List(Neighbor(ctx.srcId, dist)))
+                                                    },
+                                                    combineNeighbors(k)(_)(_)
+                                           ).map {case a => (a._1, a._2)}
   }
 
 }
