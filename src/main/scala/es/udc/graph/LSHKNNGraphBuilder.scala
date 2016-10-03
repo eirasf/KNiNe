@@ -23,10 +23,10 @@ abstract class LSHKNNGraphBuilder
     
     while(!currentData.isEmpty() && (i<5)/*DEBUG*/)
     {
-      //Maps each element to numTables (hash, index) pairs with hashes of keyLenght length.
-      val hashRDD=currentData.flatMap({case (index, point) =>
-                                        hasher.getHashes(point.features, index, radius) //TODO Hash should take radius into account
-                                      });
+      //Maps each element to numTables (hash, tabId) pairs with hashes of keyLenght length.
+      val hashRDD=currentData.flatMap{
+        case (index, point) => hasher.getHashes(point.features, radius).map((_, index))
+      }
       
       /*
       //Print hashes
@@ -122,11 +122,10 @@ abstract class LSHKNNGraphBuilder
     }
     return fullGraph
   }
-  
-  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int):RDD[(Long, List[(Long, Double)])]=computeGraph(data,
-                                                                                                                                  numNeighbors,
-                                                                                                                                  dimension,
-                                                                                                                                  new EuclideanLSHasher(dimension)) //Default to an EuclideanHasher
+
+  // TODO: Set seed of the hasher
+  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int): RDD[(Long, List[(Long, Double)])]
+      =computeGraph(data, numNeighbors, dimension, new EuclideanHasher(dimension)) //Default to an EuclideanHasher
   
   def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int):RDD[(Long, List[(Long, Double)])]=computeGraph(data,
                                                                                                                    numNeighbors,
@@ -190,10 +189,11 @@ object LSHGraphXKNNGraphBuilder// extends LSHKNNGraphBuilder
   def getGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int)=
   {
     val radius=0.5
-    val hasher=new EuclideanLSHasher(dimension)
-    val hashRDD=data.flatMap({case (point, index) =>
-                              hasher.getHashes(point.features, index, radius)
-                            });
+    val hasher=new EuclideanHasher(dimension)
+    val hashRDD=data.flatMap{
+      case (point, index) => hasher.getHashes(point.features, radius).map((_, index))
+    };
+
     val hashBuckets=hashRDD.groupByKey()
     val closeEdges=hashBuckets.filter(_._2.size>1)
                            //.repartition

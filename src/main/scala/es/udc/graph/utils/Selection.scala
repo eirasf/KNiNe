@@ -36,7 +36,8 @@ object Selection {
     }
   }
 
-  def findMedian[T <% Ordered[T]](arr: Array[T])(choosePivot: Array[T] => T)(implicit m: ClassTag[T]) = findKMedian(arr, (arr.size - 1) / 2)(choosePivot)
+  def findMedian[T <% Ordered[T]](arr: Array[T])(choosePivot: Array[T] => T)(implicit m: ClassTag[T]) =
+    findKMedian(arr, (arr.size - 1) / 2)(choosePivot)
 
   // SECTION: Possible selections of the pivot
 
