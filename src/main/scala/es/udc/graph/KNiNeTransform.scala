@@ -43,24 +43,35 @@ object KNiNeTransform
                                                         })
       
       val n=data.count()
-      val dimension=data.map(_._1.features.size).max() //TODO Dimension should be either read from the dataset or input by the user
-      println("Dataset has "+n+" elements and dimension "+dimension)
+      println("Dataset has "+n+" elements")
       
       val numNeighbors=10 //TODO Should be input from user
-                    
-      /* BRUTEFORCE VERSION */ 
+                 
+      /* LOOKUP VERSION */
       
-      val graph=BruteForceKNNGraphBuilder.parallelComputeGraph(data, numNeighbors)
+      val graph=LSHLookupKNNGraphBuilder.computeGraph(data, numNeighbors)
       //Print graph
-      println("There goes the graph:")
+      /*println("There goes the graph:")
       graph.foreach({case (elementIndex, neighbors) =>
                       for(n <- neighbors)
                         println(elementIndex+"->"+n._1+"("+n._2+")")
-                    })
+                    })*/
       /**/
+                    
+      /* BRUTEFORCE VERSION  
+      
+      val graph=BruteForceKNNGraphBuilder.parallelComputeGraph(data, numNeighbors)
+      //Print graph
+      /*println("There goes the graph:")
+      graph.foreach({case (elementIndex, neighbors) =>
+                      for(n <- neighbors)
+                        println(elementIndex+"->"+n._1+"("+n._2+")")
+                    })*/
+      */
       val edges=graph.flatMap({case (index, neighbors) => neighbors.map({case (destination, distance) => (index, destination)})})
       
-      edges.saveAsTextFile(file+"_transformed")
+      edges.foreach(println(_))
+      //edges.saveAsTextFile(file+"_transformed-kNiNe")
       
       //Stop the Spark Context
       sc.stop()

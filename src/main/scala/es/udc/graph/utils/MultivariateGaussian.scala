@@ -23,9 +23,9 @@ case class MultivariateGaussian(m: DenseVector[Double], v: DenseMatrix[Double], 
 
   /** Draws a new matrix of samples from the Multivatiate Gaussian */
   def draw(n : Int): DenseMatrix[Double] = {
-    val S : DenseMatrix[Double] = R * DenseMatrix.rand(n, m.length, stdGauss)
-    for(i <- 0 to n; j <- 0 to m.length)
-      S.update(i, j, S(i,j) + m(j))
+    val S : DenseMatrix[Double] = R * DenseMatrix.rand(m.length, n, stdGauss)
+    for(i <- 0 to m.length; j <- 0 to n)
+      S.update(i, j, S(i,j) + m(i))
     return S
   }
 

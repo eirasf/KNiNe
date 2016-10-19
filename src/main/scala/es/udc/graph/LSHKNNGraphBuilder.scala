@@ -21,24 +21,24 @@ abstract class LSHKNNGraphBuilder
     //DEBUG
     var i=0
     
-    while(!currentData.isEmpty() && (i<5)/*DEBUG*/)
+    while(!currentData.isEmpty())
     {
-      //Maps each element to numTables (hash, tabId) pairs with hashes of keyLenght length.
-      val hashRDD=currentData.flatMap{
-        case (index, point) => hasher.getHashes(point.features, radius).map((_, index))
-      }
+      //Maps each element to numTables (hash, index) pairs with hashes of keyLenght length.
+      val hashRDD=currentData.flatMap({case (index, point) =>
+                                        hasher.getHashes(point.features, index, radius) //TODO Hash should take radius into account
+                                      });
       
       /*
       //Print hashes
       hashRDD.foreach({case (hash, index) =>
                         var result=index+" - ("
                         var strHash=""
-                        for (i <- 0 until keyLength)
+                        for (i <- 0 until hash.values.length)
                           strHash+=hash.values(i)+"#"
                         result+=strHash+", "
                         println(result+")")
                       })
-       */
+      */
       
       //TODO Should all distances be computed? Maybe there's no point in computing them if we still don't have enough neighbors for an example
       //Should they be stored/cached? It may be enough to store a boolean that records if they have been computed. LRU Cache?
@@ -46,7 +46,7 @@ abstract class LSHKNNGraphBuilder
       
       //Groups elements mapped to the same hash
       val hashBuckets=hashRDD.groupByKey()
-      
+      hashBuckets.map({_._2.size>1}).foreach(println(_))
       /*
       //Print buckets
       println("Buckets:")
@@ -81,6 +81,7 @@ abstract class LSHKNNGraphBuilder
       //TODO Check for duplicates
       //Simplify dataset
       //Remove only elements that already have all their neighbors
+      fullGraph.foreach(println(_))
       val completeNodes=fullGraph.filter({case (index, list) => list.size>=numNeighbors})
       println("Complete nodes:")
       completeNodes.foreach(println)
@@ -116,16 +117,17 @@ abstract class LSHKNNGraphBuilder
       //Increment radius
       radius*=2
       //DEBUG
-      println("Step "+i+ " - "+currentData.count()+" nodes left")
+      println("Step "+i+ " - "+currentData.count()+" nodes left. Radius:"+radius)
       fullGraph.foreach(println(_))
       i+=1
     }
     return fullGraph
   }
-
-  // TODO: Set seed of the hasher
-  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int): RDD[(Long, List[(Long, Double)])]
-      =computeGraph(data, numNeighbors, dimension, new EuclideanHasher(dimension)) //Default to an EuclideanHasher
+  
+  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int):RDD[(Long, List[(Long, Double)])]=computeGraph(data,
+                                                                                                                                  numNeighbors,
+                                                                                                                                  dimension,
+                                                                                                                                  new EuclideanLSHasher(dimension)) //Default to an EuclideanHasher
   
   def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int):RDD[(Long, List[(Long, Double)])]=computeGraph(data,
                                                                                                                    numNeighbors,
@@ -189,11 +191,10 @@ object LSHGraphXKNNGraphBuilder// extends LSHKNNGraphBuilder
   def getGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int)=
   {
     val radius=0.5
-    val hasher=new EuclideanHasher(dimension)
-    val hashRDD=data.flatMap{
-      case (point, index) => hasher.getHashes(point.features, radius).map((_, index))
-    };
-
+    val hasher=new EuclideanLSHasher(dimension)
+    val hashRDD=data.flatMap({case (point, index) =>
+                              hasher.getHashes(point.features, index, radius)
+                            });
     val hashBuckets=hashRDD.groupByKey()
     val closeEdges=hashBuckets.filter(_._2.size>1)
                            //.repartition
