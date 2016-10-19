@@ -9,7 +9,7 @@ import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.regression.LabeledPoint
 
-object LocalBruteForceKNNGraphBuilder
+object BruteForceKNNGraphBuilder
 {
   class IndexDistancePair(pIndex: Long, pDistance: Double)
   {
@@ -57,6 +57,11 @@ object LocalBruteForceKNNGraphBuilder
            }
          }
     }
+    def addElements(n:NeighborsForElement)=
+    {
+      for (p <- n.listNeighbors)
+        this.addElement(p.index, p.distance)
+    }
   }
   
   def computeGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int):List[(Long, List[(Long, Double)])]=
@@ -97,5 +102,35 @@ object LocalBruteForceKNNGraphBuilder
   def computeGraph(data:RDD[(LabeledPoint, Long)], numNeighbors:Int):List[(Long, List[(Long, Double)])]=
   {
     computeGraph(data.map(_._2).collect(), new BroadcastLookupProvider(data), numNeighbors)
+  }
+  
+  def parallelComputeGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int):RDD[(Long, List[(Long, Double)])]=
+  {
+    var sc=sparkContextSingleton.getInstance()
+    
+    var rddIndices=sc.parallelize(arrayIndices)
+    
+    var rddPairs=rddIndices.cartesian(rddIndices)
+    
+    return rddPairs.map({case (i,j) => val feat1=lookup.lookup(i).features
+                                 val feat2=lookup.lookup(j).features
+                                 //TODO Different distances could be used
+                                 val d=Vectors.sqdist(feat1, feat2)
+                                 
+                                 val n=new NeighborsForElement(numNeighbors)
+                                 n.addElement(j, d)
+                                 (i, n)
+                })
+            .reduceByKey({case (n1, n2) => n1.addElements(n2)
+                                           n1
+                })
+            .map({case (index, neighbors) => (index,
+                                              neighbors.listNeighbors.map { x => (x.index, x.distance) })
+                })
+  }
+  
+  def parallelComputeGraph(data:RDD[(LabeledPoint, Long)], numNeighbors:Int):RDD[(Long, List[(Long, Double)])]=
+  {
+    parallelComputeGraph(data.map(_._2).collect(), new BroadcastLookupProvider(data), numNeighbors)
   }
 }

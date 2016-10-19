@@ -26,6 +26,8 @@ object sparkContextSingleton
                                                 .set("spark.broadcast.factory", "org.apache.spark.broadcast.HttpBroadcastFactory")
                                                 //.set("spark.eventLog.enabled", "true")
                                                 //.set("spark.eventLog.dir","file:///home/eirasf/Escritorio/Tmp-work/sparklog-local")
+                                                .set("spark.kryoserializer.buffer.max", "512")
+                                                .set("spark.driver.maxResultSize", "2048")
 
   def getInstance(): SparkContext=
   {
@@ -50,7 +52,7 @@ object KNiNe
       //Set up Spark Context
       val sc=sparkContextSingleton.getInstance()
       
-      //Stop annooying INFO messages
+      //Stop annoying INFO messages
       val rootLogger = Logger.getRootLogger()
       rootLogger.setLevel(Level.WARN)
       

@@ -171,7 +171,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
                          //Remove duplicates from indices
                          val arrayIndices=indices.toSet.toArray
                          if (arrayIndices.length>1)
-                           LocalBruteForceKNNGraphBuilder.computeGraph(arrayIndices, lookup, numNeighbors)
+                           BruteForceKNNGraphBuilder.computeGraph(arrayIndices, lookup, numNeighbors)
                          else
                            Nil
                          })

@@ -36,6 +36,6 @@ class BroadcastLookupProvider(dataset: RDD[(LabeledPoint, Long)]) extends Lookup
   
   def lookup(index:Long):LabeledPoint=
   {
-    return bData.value(index.toInt)._1
+    return bData.value(index.toInt-1)._1
   }
 }
