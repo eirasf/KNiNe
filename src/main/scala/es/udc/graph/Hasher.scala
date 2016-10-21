@@ -27,8 +27,9 @@ trait Hasher extends Serializable
 class EuclideanLSHasher(dimension:Int) extends Hasher 
 {
   private val OptimalW=4
-  val numTables=4
-  val keyLength=5
+  val numTables=40
+  //val keyLength=5
+  val keyLength=200
   val w=OptimalW
   
   val gaussianVectors=ofDim[Double](numTables, keyLength, dimension)

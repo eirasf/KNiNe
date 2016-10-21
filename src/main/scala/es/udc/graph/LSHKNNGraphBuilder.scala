@@ -15,7 +15,7 @@ abstract class LSHKNNGraphBuilder
   {
     var fullGraph:RDD[(Long, List[(Long, Double)])]=null
     var currentData=data.map(_.swap)
-    var radius=5//0.1
+    var radius=0.1//5//0.1
     
     var nodesLeft=currentData.count()
     
@@ -27,18 +27,6 @@ abstract class LSHKNNGraphBuilder
                                         hasher.getHashes(point.features, index, radius)
                                       });
       
-      /*
-      //Print hashes
-      hashRDD.foreach({case (hash, index) =>
-                        var result=index+" - ("
-                        var strHash=""
-                        for (i <- 0 until hash.values.length)
-                          strHash+=hash.values(i)+"#"
-                        result+=strHash+", "
-                        println(result+")")
-                      })
-      */
-      
       //TODO Should all distances be computed? Maybe there's no point in computing them if we still don't have enough neighbors for an example
       //Should they be stored/cached? It may be enough to store a boolean that records if they have been computed. LRU Cache?
       //How will the graph be represented? Maybe an index RDD to be joined with the result of each step?
@@ -46,19 +34,22 @@ abstract class LSHKNNGraphBuilder
       //Groups elements mapped to the same hash
       //val hashBuckets=hashRDD.groupByKey()
       val hashBuckets:RDD[(Hash, Iterable[Long])]=hashRDD.groupByKey().map({case (k, l) => (k, l.toSet)})
-            
-      //Print buckets
-      //println("Buckets:")
-      //hashBuckets.foreach({case (hash, indices) => println(hash.values.mkString(",") + " -> " + indices)})
       
+      /*
+      //Print buckets
+      println("Buckets:")
+      hashBuckets.foreach({case (hash, indices) => println(hash.values.mkString(",") + " -> " + indices)})
+      */
+      println("Largest bucket: "+hashBuckets.map(_._2.size).max())
       
       //TODO Evaluate bucket size and increase/decrease radius without bruteforcing if necessary.
       
       val subgraph=getGraphFromBuckets(data, hashBuckets, numNeighbors)
       
       //subgraph.foreach(println(_))
+      //subgraph.sortBy(_._1).foreach({case (e,l) => println((e,l.sortBy(_._1)))})
       
-      //TODO Check neighbors of destination vertices
+      //Refine graph by checking neighbors of destination vertices
       
       //Merge generate graph with existing one.
       fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors)
@@ -71,7 +62,8 @@ abstract class LSHKNNGraphBuilder
       currentData.cache()
       nodesLeft=currentData.count()
       //Increment radius
-      radius*=2
+      //radius*=2
+      radius*=1.4
       //DEBUG
       println(nodesLeft+" nodes left. Radius:"+radius)
       //fullGraph.foreach(println(_))
@@ -99,13 +91,13 @@ abstract class LSHKNNGraphBuilder
           nodesLeft=currentData.count() 
         }
         println(nodesLeft+" nodes left after first attempt")
-      }
+      }/*
       if (nodesLeft>0) //No solution other than check this points with every other
       {
         val pairs=currentData.cartesian(fullGraph.map({case (point, neighbors) => point}))
         val subgraph=getGraphFromPairs(data, pairs, numNeighbors)
         fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors)
-      }
+      }*/
     }
     
     return fullGraph
@@ -125,6 +117,8 @@ abstract class LSHKNNGraphBuilder
   protected def getGraphFromElementIndexLists(data:RDD[(LabeledPoint,Long)], elementIndexLists:RDD[Iterable[Long]], numNeighbors:Int):RDD[(Long, List[(Long, Double)])]
   
   protected def getGraphFromPairs(data:RDD[(LabeledPoint,Long)], pairs:RDD[((Long, LabeledPoint), Long)], numNeighbors:Int):RDD[(Long, List[(Long, Double)])]
+  
+  protected def getGraphFromIndexPairs(data:RDD[(LabeledPoint,Long)], pairs:RDD[(Long, Long)], numNeighbors:Int):RDD[(Long, List[(Long, Double)])]
   
   private def simplifyDataset(dataset:RDD[(Long, LabeledPoint)], currentGraph:RDD[(Long, List[(Long, Double)])], numNeighbors:Int):RDD[(Long, LabeledPoint)]=
   {
@@ -175,6 +169,20 @@ abstract class LSHKNNGraphBuilder
     return g1.union(g2).reduceByKey({case (neighbors1, neighbors2) =>
                                                       f(neighbors1, neighbors2, numNeighbors)
                                                     })
+  }
+  
+  /**
+ * @param g
+ * @return Resulting graph of searching for closer neighbors in the neighbors of the neighbors for each node
+ */
+  /*private */def refineGraph(data:RDD[(LabeledPoint, Long)], g:RDD[(Long, List[(Long, Double)])], numNeighbors:Int):RDD[(Long, List[(Long, Double)])]=
+  {
+    var subgraph=getGraphFromIndexPairs(data,
+                                        g.flatMap({case (node, neighbors) => neighbors.map({case (dest, dist) => (dest, node)})})
+                                         .join(g)
+                                         .flatMap({case (dest, (node, neighsNeighs)) => neighsNeighs.map({case (d, dist) => (node, d)})}),
+                                        numNeighbors)
+    return mergeSubgraphs(g, subgraph, numNeighbors)
   }
   
   val mergeNeighborLists = (neighbors1:List[(Long, Double)], neighbors2:List[(Long, Double)], numNeighbors:Int) =>
@@ -263,6 +271,20 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
     
     //Discard single element hashes and for the rest get every possible pairing to build graph
     val graph=pairs.map({case ((i1,p1),i2) => (i1, List((i2, BruteForceKNNGraphBuilder.getDistance(p1, lookup.lookup(i2)))))})
+             //Merge neighbors found for the same element in different hash buckets
+             .reduceByKey({case (neighbors1, neighbors2) =>
+                             mergeNeighborLists(neighbors1, neighbors2, numNeighbors)
+                           })
+                           
+    graph
+  }
+  
+  override def getGraphFromIndexPairs(data:RDD[(LabeledPoint,Long)], pairs:RDD[(Long, Long)], numNeighbors:Int):RDD[(Long, List[(Long, Double)])]=
+  {
+    val lookup=new BroadcastLookupProvider(data)
+    
+    //Discard single element hashes and for the rest get every possible pairing to build graph
+    val graph=pairs.map({case (i1,i2) => (i1, List((i2, BruteForceKNNGraphBuilder.getDistance(lookup.lookup(i1), lookup.lookup(i2)))))})
              //Merge neighbors found for the same element in different hash buckets
              .reduceByKey({case (neighbors1, neighbors2) =>
                              mergeNeighborLists(neighbors1, neighbors2, numNeighbors)

@@ -113,14 +113,17 @@ object BruteForceKNNGraphBuilder
     
     var rddPairs=rddIndices.cartesian(rddIndices)
     
-    return rddPairs.map({case (i,j) => val feat1=lookup.lookup(i).features
-                                 val feat2=lookup.lookup(j).features
-                                 //TODO Different distances could be used
-                                 val d=Vectors.sqdist(feat1, feat2)
-                                 
-                                 val n=new NeighborsForElement(numNeighbors)
-                                 n.addElement(j, d)
-                                 (i, n)
+    return rddPairs.flatMap({case (i,j) => if (i==j)
+                                             None
+                                           else
+                                           {
+                                             val d=getDistance(lookup.lookup(i),
+                                                               lookup.lookup(j))
+                                             
+                                             val n=new NeighborsForElement(numNeighbors)
+                                             n.addElement(j, d)
+                                             Some((i, n))
+                                           }
                 })
             .reduceByKey({case (n1, n2) => n1.addElements(n2)
                                            n1

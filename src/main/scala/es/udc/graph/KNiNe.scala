@@ -47,7 +47,16 @@ object KNiNe
         return
       }
       
-      var file=args(0)
+      //OPTIONS - TODO Should be input from user
+      //val file=args(0)
+      val file="/home/eirasf/Escritorio/kNNTEMP/car-dopado.libsvm"
+      val numNeighbors=10
+      //val METHOD="brute"
+      val METHOD="lsh"
+      val FORMAT=if ((file.length()>7) && (file.substring(file.length()-7) ==".libsvm"))
+                   "libsvm"
+                 else
+                   "text"
       
       //Set up Spark Context
       val sc=sparkContextSingleton.getInstance()
@@ -57,7 +66,15 @@ object KNiNe
       rootLogger.setLevel(Level.WARN)
       
       //Load data from file
-      val data: RDD[(LabeledPoint, Long)] = MLUtils.loadLibSVMFile(sc, file).zipWithIndex()
+      val data: RDD[(LabeledPoint, Long)] = if (FORMAT=="libsvm")
+                                              MLUtils.loadLibSVMFile(sc, file).zipWithIndex()
+                                            else
+                                            {
+                                              val rawData=sc.textFile(file)
+                                              rawData.map({ line => val values=line.split(";")
+                                                                    (new LabeledPoint(0.0, Vectors.dense(values.slice(1, values.length).map { x => x.toDouble })), values(0).toLong-1)
+                                                          })
+                                            }
       
       /*
       //Normalize if necessary
@@ -117,10 +134,7 @@ object KNiNe
       */
       
       val n=data.count()
-      val dimension=data.map(_._1.features.size).max() //TODO Dimension should be either read from the dataset or input by the user
-      println("Dataset has "+n+" elements and dimension +"+dimension)
-      
-      val numNeighbors=2 //TODO Should be input from user
+      println("Dataset has "+n+" elements")
       
       /* GRAPH VERSION 
       
@@ -130,27 +144,58 @@ object KNiNe
       
       */
       
+      val graph:RDD[(Long,List[(Long,Double)])]=if (METHOD=="lsh")
+                  /* LOOKUP VERSION */
+                  LSHLookupKNNGraphBuilder.computeGraph(data, numNeighbors)
+                else
+                  /* BRUTEFORCE VERSION */
+                  BruteForceKNNGraphBuilder.parallelComputeGraph(data, numNeighbors)
       
-      /* LOOKUP VERSION */
-      
-      val graph=LSHLookupKNNGraphBuilder.computeGraph(data, numNeighbors, dimension)
       //Print graph
-      println("There goes the graph:")
+      /*println("There goes the graph:")
       graph.foreach({case (elementIndex, neighbors) =>
                       for(n <- neighbors)
                         println(elementIndex+"->"+n._1+"("+n._2+")")
                     })
-      /**/
-                    
-      /* BRUTEFORCE VERSION
+      */
+                  
+      val edges=graph.flatMap({case (index, neighbors) => neighbors.map({case (destination, distance) => (index, destination, distance)}).toSet})
       
-      val graph=LocalBruteForceKNNGraphBuilder.computeGraph(data, numNeighbors)
-      //Print graph
-      println("There goes the graph:")
-      graph.foreach({case (elementIndex, neighbors) =>
-                      for(n <- neighbors)
-                        println(elementIndex+"->"+n._1+"("+n._2+")")
-                    })
+      var counted=edges.map({case x=>(x._1,1)}).reduceByKey(_+_).sortBy(_._1)
+      //counted.foreach(println(_))
+      
+      var forCount=counted.map(_._2)
+      println("Obtained "+forCount.sum()+" edges for "+forCount.count()+" nodes")
+      
+      //Save to file
+      //TEMP
+      val fileParts=file.split("/")
+      var justFileName=fileParts(fileParts.length-1).split("\\.")(0)
+      val path="/home/eirasf/Escritorio/kNNTEMP/"+justFileName
+      val fileName=path+numNeighbors+"NN_graph-"+METHOD+Random.nextInt(1000)
+      edges
+          .sortBy(_._1) //TEMP
+          .saveAsTextFile(fileName)
+          
+      /*
+      
+      //TEMP - Compare with ground truth
+      CompareGraphs.compare(path+numNeighbors+"NN_graph-brute", fileName+"/part-00000")
+      
+      if (METHOD=="lsh")
+      {
+        val fileNameR=path+numNeighbors+"NN_graphRefined-"+METHOD+Random.nextInt(1000)
+        val edgesR=LSHLookupKNNGraphBuilder.refineGraph(data, graph, numNeighbors)
+                                           .flatMap({case (index, neighbors) =>
+                                                           neighbors.map({case (destination, distance) =>
+                                                                                 (index, destination, distance)}).toSet})
+        edgesR
+            .sortBy(_._1) //TEMP
+            .saveAsTextFile(fileNameR)
+            
+        //TEMP - Compare with ground truth
+        CompareGraphs.compare(path+numNeighbors+"NN_graph-brute", fileNameR+"/part-00000")
+      }
       */
       
       //Stop the Spark Context
