@@ -24,8 +24,8 @@ object sparkContextSingleton
                                                 .setMaster("local")
                                                 .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
                                                 .set("spark.broadcast.factory", "org.apache.spark.broadcast.HttpBroadcastFactory")
-                                                //.set("spark.eventLog.enabled", "true")
-                                                //.set("spark.eventLog.dir","file:///home/eirasf/Escritorio/Tmp-work/sparklog-local")
+                                                .set("spark.eventLog.enabled", "true")
+                                                .set("spark.eventLog.dir","file:///home/eirasf/Escritorio/sparklog-local")
                                                 .set("spark.kryoserializer.buffer.max", "512")
                                                 .set("spark.driver.maxResultSize", "2048")
 

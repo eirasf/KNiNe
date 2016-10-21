@@ -75,8 +75,8 @@ class EuclideanLSHasher(dimension:Int) extends Hasher
             if (indices(k)<dimension)
               dotProd+=values(k) * gaussianVectors(i)(j)(indices(k))
           }
-          dotProd/=radius
         }
+        dotProd/=radius
         hash(j)=math.floor((dotProd + b(i)(j))/w).toInt
       }
       hashes=(new Hash(hash),index) :: hashes

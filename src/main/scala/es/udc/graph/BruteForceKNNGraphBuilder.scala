@@ -77,10 +77,8 @@ object BruteForceKNNGraphBuilder
     {
       for(j <- i+1 until arrayIndices.length)
       {
-         val feat1=lookup.lookup(arrayIndices(i)).features
-         val feat2=lookup.lookup(arrayIndices(j)).features
-         //TODO Different distances could be used
-         val d=Vectors.sqdist(feat1, feat2)
+         val d=getDistance(lookup.lookup(arrayIndices(i)),
+                           lookup.lookup(arrayIndices(j)))
          
          //println("D("+arrayIndices(i)+"<->"+arrayIndices(j)+")="+d+"#"+feat1.toString()+feat2.toString())
          
@@ -98,6 +96,9 @@ object BruteForceKNNGraphBuilder
     
     graph
   }
+  
+  //TODO Different distances could be used
+  def getDistance(p1:LabeledPoint, p2:LabeledPoint):Double=Vectors.sqdist(p1.features, p2.features)
   
   def computeGraph(data:RDD[(LabeledPoint, Long)], numNeighbors:Int):List[(Long, List[(Long, Double)])]=
   {

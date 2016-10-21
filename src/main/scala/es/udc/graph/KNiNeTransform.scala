@@ -39,7 +39,7 @@ object KNiNeTransform
       //Load data from file
       val rawData=sc.textFile(file)
       val data: RDD[(LabeledPoint, Long)] = rawData.map({ line => val values=line.split(";")
-                                                                  (new LabeledPoint(0.0, Vectors.dense(values.slice(1, values.length).map { x => x.toDouble })), values(0).toLong)
+                                                                  (new LabeledPoint(0.0, Vectors.dense(values.slice(1, values.length).map { x => x.toDouble })), values(0).toLong-1)
                                                         })
       
       val n=data.count()
@@ -68,10 +68,14 @@ object KNiNeTransform
                         println(elementIndex+"->"+n._1+"("+n._2+")")
                     })*/
       */
-      val edges=graph.flatMap({case (index, neighbors) => neighbors.map({case (destination, distance) => (index, destination)})})
+      val edges=graph.flatMap({case (index, neighbors) => neighbors.map({case (destination, distance) => (index, destination)}).toSet})
       
-      edges.foreach(println(_))
-      //edges.saveAsTextFile(file+"_transformed-kNiNe")
+      var counted=edges.map({case x=>(x._1,1)}).reduceByKey(_+_).sortBy(_._1)
+      counted.foreach(println(_))
+      
+      var forCount=counted.map(_._2)
+      println("Obtained "+forCount.sum()+" edges for "+forCount.count()+" nodes")
+      edges.saveAsTextFile(file+"_transformed-kNiNe")
       
       //Stop the Spark Context
       sc.stop()
