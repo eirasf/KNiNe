@@ -64,7 +64,7 @@ object BruteForceKNNGraphBuilder
     }
   }
   
-  def computeGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int):List[(Long, List[(Long, Double)])]=
+  def computeGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int):List[(Long, (Int,List[(Long, Double)]))]=
   {
     val closestNeighbors=new Array[NeighborsForElement](arrayIndices.length) //For each element stores the farthest near neighbor so far and a list of near neighbors with their distances
     
@@ -72,7 +72,7 @@ object BruteForceKNNGraphBuilder
     for(i <- 0 until arrayIndices.length)
       closestNeighbors(i)=new NeighborsForElement(numNeighbors)
     
-    var graph:List[(Long, List[(Long, Double)])]=Nil //Graph to be returned
+    var graph:List[(Long, (Int,List[(Long, Double)]))]=Nil //Graph to be returned
     for(i <- 0 until arrayIndices.length)
     {
       for(j <- i+1 until arrayIndices.length)
@@ -91,7 +91,7 @@ object BruteForceKNNGraphBuilder
       for (j <- closestNeighbors(i).listNeighbors)
         neighbors=(j.index, j.distance) :: neighbors
       //TODO Add whatever more information is useful (distances, number of elements hit).
-      graph = (arrayIndices(i), neighbors) :: graph
+      graph = (arrayIndices(i), (arrayIndices.length-1, neighbors)) :: graph
     }
     
     graph
@@ -100,7 +100,7 @@ object BruteForceKNNGraphBuilder
   //TODO Different distances could be used
   def getDistance(p1:LabeledPoint, p2:LabeledPoint):Double=Vectors.sqdist(p1.features, p2.features)
   
-  def computeGraph(data:RDD[(LabeledPoint, Long)], numNeighbors:Int):List[(Long, List[(Long, Double)])]=
+  def computeGraph(data:RDD[(LabeledPoint, Long)], numNeighbors:Int):List[(Long, (Int,List[(Long, Double)]))]=
   {
     computeGraph(data.map(_._2).collect(), new BroadcastLookupProvider(data), numNeighbors)
   }

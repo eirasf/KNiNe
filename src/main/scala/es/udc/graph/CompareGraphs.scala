@@ -35,7 +35,7 @@ object CompareGraphs
       
       val totalEdges=dataExact.count()
       
-      println("The graph has "+totalEdges+" edges")
+//println("The graph has "+totalEdges+" edges")
       
       val commonEdges=dataExact.groupByKey().join(data)
                                             .map({case (element, (neighborsExact, neighbors)) => val intersect=neighbors.toSet.intersect(neighborsExact.toSet)
@@ -62,7 +62,8 @@ object CompareGraphs
                             .sortBy(_._1)
                             .foreach(println(_))*/
                                
-      println("The aprox. graph has "+commonEdges+" edges in common ("+(commonEdges.toDouble/totalEdges.toDouble)+")")
+//println("The aprox. graph has "+commonEdges+" edges in common ("+(commonEdges.toDouble/totalEdges.toDouble)+")")
+println(commonEdges.toDouble/totalEdges.toDouble)
       return r
     }
     def main(args: Array[String])

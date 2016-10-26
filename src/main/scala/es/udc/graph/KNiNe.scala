@@ -25,8 +25,8 @@ object sparkContextSingleton
                                                 .setMaster("local")
                                                 .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
                                                 .set("spark.broadcast.factory", "org.apache.spark.broadcast.HttpBroadcastFactory")
-                                                //.set("spark.eventLog.enabled", "true")
-                                                //.set("spark.eventLog.dir","file:///home/eirasf/Escritorio/sparklog-local")
+                                                .set("spark.eventLog.enabled", "true")
+                                                .set("spark.eventLog.dir","file:///home/eirasf/Escritorio/sparklog-local")
                                                 .set("spark.kryoserializer.buffer.max", "512")
                                                 .set("spark.driver.maxResultSize", "2048")
 
@@ -53,6 +53,7 @@ Options:
     -r    Starting radius (default: """+LSHKNNGraphBuilder.DEFAULT_RADIUS_START+""")
     -n    Number of hashes per item (default: """+Hasher.DEFAULT_NUM_TABLES+""")
     -l    Hash length (default: """+Hasher.DEFAULT_KEY_LENGTH+""")
+    -t    Maximum comparisons per item (default: auto)
     -c    File containing the graph to compare to (default: nothing)""")
     System.exit(-1)
   }
@@ -85,6 +86,7 @@ Options:
           case "r"   => "radius_start"
           case "n"   => "num_tables"
           case "l"   => "key_length"
+          case "t"   => "max_comparisons"
           case "c"   => "compare"
           case somethingElse => readOptionName
         }
@@ -144,9 +146,13 @@ Options:
                       options("compare").asInstanceOf[String]
                     else
                       null
+    val maxComparisons:Int=if (options.exists(_._1=="max_comparisons"))
+                         options("max_comparisons").asInstanceOf[Double].toInt
+                       else
+                         -1
                  
-    println("Using "+method+" to compute "+numNeighbors+"NN graph for dataset "+justFileName)
-    println("R0:"+radius0+" num_tables:"+numTables+" keyLength:"+keyLength)
+//    println("Using "+method+" to compute "+numNeighbors+"NN graph for dataset "+justFileName)
+//    println("R0:"+radius0+" num_tables:"+numTables+" keyLength:"+keyLength+(if (maxComparisons!=null)" maxComparisons:"+maxComparisons else ""))
     
     //Set up Spark Context
     val sc=sparkContextSingleton.getInstance()
@@ -236,7 +242,7 @@ Options:
     
     val graph:RDD[(Long,List[(Long,Double)])]=if (method=="lsh")
                                                 /* LOOKUP VERSION */
-                                                LSHLookupKNNGraphBuilder.computeGraph(data, numNeighbors, keyLength, numTables)
+                                                LSHLookupKNNGraphBuilder.computeGraph(data, numNeighbors, keyLength, numTables, radius0, maxComparisons)
                                               else
                                                 /* BRUTEFORCE VERSION */
                                                 BruteForceKNNGraphBuilder.parallelComputeGraph(data, numNeighbors)
@@ -254,7 +260,7 @@ Options:
     //DEBUG
     var counted=edges.map({case x=>(x._1,1)}).reduceByKey(_+_).sortBy(_._1)
     var forCount=counted.map(_._2)
-    println("Obtained "+forCount.sum()+" edges for "+forCount.count()+" nodes")
+    //println("Obtained "+forCount.sum()+" edges for "+forCount.count()+" nodes")
     
     //Save to file
     var fileName=options("output").asInstanceOf[String]
@@ -276,7 +282,7 @@ Options:
       //TEMP - Compare with ground truth
       var firstComparison=CompareGraphs.compare(compareFile, fileName+"/part-00000")
       
-      if (method=="lsh")
+      /*if (method=="lsh")
       {
         var refinedGraph=graph
         for (i <- 0 until 1)
@@ -304,7 +310,7 @@ Options:
                          .foreach(println(_))
           */
         }
-      }
+      }*/
     }
     /**/
     //Stop the Spark Context
