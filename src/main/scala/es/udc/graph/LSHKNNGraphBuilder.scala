@@ -8,6 +8,11 @@ import org.apache.spark.mllib.linalg.Vectors
 import es.udc.graph.utils.GraphUtils
 
 // TODO The graph representation that is more suitable for the computations needs to be identified and used
+object LSHKNNGraphBuilder
+{
+  val DEFAULT_RADIUS_START=0.1
+  
+}
 
 abstract class LSHKNNGraphBuilder
 {
@@ -15,12 +20,16 @@ abstract class LSHKNNGraphBuilder
   {
     var fullGraph:RDD[(Long, List[(Long, Double)])]=null
     var currentData=data.map(_.swap)
-    var radius=0.1//5//0.1
-    
+    var radius=0.2//5//0.1
+val totalElements=currentData.count()
+val bfOps:Double=totalElements*totalElements///2.0
+var totalOps:Long=0
+var numBuckets:Long=2
     var nodesLeft=currentData.count()
     
     //while(!currentData.isEmpty())
-    while(nodesLeft>numNeighbors)
+    //while(nodesLeft>numNeighbors)
+    while(numBuckets>1 && nodesLeft>1)
     {
       //Maps each element to numTables (hash, index) pairs with hashes of keyLenght length.
       val hashRDD=currentData.flatMap({case (index, point) =>
@@ -29,30 +38,45 @@ abstract class LSHKNNGraphBuilder
       
       //TODO Should all distances be computed? Maybe there's no point in computing them if we still don't have enough neighbors for an example
       //Should they be stored/cached? It may be enough to store a boolean that records if they have been computed. LRU Cache?
-      //How will the graph be represented? Maybe an index RDD to be joined with the result of each step?
       
       //Groups elements mapped to the same hash
       //val hashBuckets=hashRDD.groupByKey()
       val hashBuckets:RDD[(Hash, Iterable[Long])]=hashRDD.groupByKey().map({case (k, l) => (k, l.toSet)})
-      
+numBuckets=hashBuckets.count()
+println("Buckets: "+numBuckets)
       /*
       //Print buckets
       println("Buckets:")
       hashBuckets.foreach({case (hash, indices) => println(hash.values.mkString(",") + " -> " + indices)})
       */
-      println("Largest bucket: "+hashBuckets.map(_._2.size).max())
+      val filteredBuckets=hashBuckets.map(_._2.size).filter(_>1)
+      //println(filteredBuckets.count()+ " buckets ["+filteredBuckets.min()+", "+filteredBuckets.max()+"] elements")
+      val stepOps=filteredBuckets.map((_,1))
+                     .reduceByKey(_+_)
+
+totalOps=totalOps+stepOps.map({case x => x._2 * x._1 * x._1 /2.0}).sum().toLong
+
+      stepOps.sortBy(_._1)
+                     .foreach({case x => println(x._2+" buckets with "+x._1+" elements => "+(x._2 * x._1 * x._1/2.0)+" ops")})
+
+      
       
       //TODO Evaluate bucket size and increase/decrease radius without bruteforcing if necessary.
       
-      val subgraph=getGraphFromBuckets(data, hashBuckets, numNeighbors)
+      var subgraph=getGraphFromBuckets(data, hashBuckets, numNeighbors)
       
       //subgraph.foreach(println(_))
       //subgraph.sortBy(_._1).foreach({case (e,l) => println((e,l.sortBy(_._1)))})
       
       //Refine graph by checking neighbors of destination vertices
+//TODO TEST
+subgraph=refineGraph(data,subgraph,numNeighbors)
       
       //Merge generate graph with existing one.
       fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors)
+      
+      //TODO TEST
+//fullGraph=refineGraph(data,fullGraph,numNeighbors)
       
       //TODO Check for duplicates
       //Simplify dataset
@@ -63,14 +87,14 @@ abstract class LSHKNNGraphBuilder
       nodesLeft=currentData.count()
       //Increment radius
       //radius*=2
-      radius*=1.4
+      radius*=2.0//1.4
       //DEBUG
       println(nodesLeft+" nodes left. Radius:"+radius)
       //fullGraph.foreach(println(_))
     }
     if (nodesLeft>0)
     {
-      println("Elements left:"+currentData.map(_._1).collect().mkString(","))
+      println("Elements left:"+currentData.map(_._1).collect().mkString(", "))
       if (fullGraph!=null)
       {
         //If there are any items left, look in the neighbor's neighbors.
@@ -81,6 +105,7 @@ abstract class LSHKNNGraphBuilder
                                                                                                     None })
                                                    .reduceByKey({case (dl1,dl2) => dl1 ++ dl2})
                                                    .map({case (o,dl) => dl + o})
+totalOps=totalOps+neighbors.map({case x => x.size * x.size }).sum().toLong
         val subgraph=getGraphFromElementIndexLists(data, neighbors, numNeighbors)
         
         if (!subgraph.isEmpty())
@@ -91,26 +116,31 @@ abstract class LSHKNNGraphBuilder
           nodesLeft=currentData.count() 
         }
         println(nodesLeft+" nodes left after first attempt")
-      }/*
+      }
       if (nodesLeft>0) //No solution other than check this points with every other
       {
         val pairs=currentData.cartesian(fullGraph.map({case (point, neighbors) => point}))
         val subgraph=getGraphFromPairs(data, pairs, numNeighbors)
         fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors)
-      }*/
+totalOps=totalOps+pairs.count()
+      }
     }
+println("Operations wrt bruteforce: "+(totalOps/bfOps))
     
     return fullGraph
   }
   
-  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int):RDD[(Long, List[(Long, Double)])]=computeGraph(data,
+  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasherKeyLength:Int, hasherNumTables:Int):RDD[(Long, List[(Long, Double)])]=computeGraph(data,
                                                                                                                                   numNeighbors,
                                                                                                                                   dimension,
-                                                                                                                                  new EuclideanLSHasher(dimension)) //Default to an EuclideanHasher
+                                                                                                                                  new EuclideanLSHasher(dimension, hasherKeyLength, hasherNumTables)) //Default to an EuclideanHasher
   
-  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int):RDD[(Long, List[(Long, Double)])]=computeGraph(data,
-                                                                                                                   numNeighbors,
-                                                                                                                   data.map({case (point, index) => point.features.size}).max()) //Get dimension from dataset
+  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, hasherKeyLength:Int, hasherNumTables:Int):RDD[(Long, List[(Long, Double)])]
+            =computeGraph(data,
+                           numNeighbors,
+                           data.map({case (point, index) => point.features.size}).max(), //Get dimension from dataset
+                           hasherKeyLength:Int,
+                           hasherNumTables:Int)
                                                                                                                             
   protected def getGraphFromBuckets(data:RDD[(LabeledPoint,Long)], hashBuckets:RDD[(Hash, Iterable[Long])], numNeighbors:Int):RDD[(Long, List[(Long, Double)])]
   
@@ -180,7 +210,10 @@ abstract class LSHKNNGraphBuilder
     var subgraph=getGraphFromIndexPairs(data,
                                         g.flatMap({case (node, neighbors) => neighbors.map({case (dest, dist) => (dest, node)})})
                                          .join(g)
-                                         .flatMap({case (dest, (node, neighsNeighs)) => neighsNeighs.map({case (d, dist) => (node, d)})}),
+                                         .flatMap({case (dest, (node, neighsNeighs)) => neighsNeighs.flatMap({case (d, dist) => if (node!=d)
+                                                                                                                                  Some((node, d))
+                                                                                                                                else
+                                                                                                                                  None})}),
                                         numNeighbors)
     return mergeSubgraphs(g, subgraph, numNeighbors)
   }
@@ -294,7 +327,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
   }
 }
 
-object LSHGraphXKNNGraphBuilder// extends LSHKNNGraphBuilder
+/*object LSHGraphXKNNGraphBuilder// extends LSHKNNGraphBuilder
 {
   def getGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int)=
   {
@@ -336,4 +369,4 @@ object LSHGraphXKNNGraphBuilder// extends LSHKNNGraphBuilder
   {
     
   }*/
-}
+}*/

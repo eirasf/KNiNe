@@ -19,7 +19,7 @@ import org.apache.log4j.{Level, Logger}
 
 object CompareGraphs
 {
-    def compare(fileExact:String, file:String)=
+    def compare(fileExact:String, file:String):RDD[(Long,(Double, Set[(Long,Double)],Double, Set[(Long,Double)]))]=
     {
       val sc=sparkContextSingleton.getInstance()
       //Load data from files
@@ -46,8 +46,24 @@ object CompareGraphs
                                                                                                  
                                             
                                             .sum()
+                                            
+      var r=dataExact.groupByKey().join(data)
+                            .flatMap({case (element, (neighborsExact, neighbors)) => val intersect=neighbors.toSet.intersect(neighborsExact.toSet)
+                                                                                 var result=intersect.size
+                                                                                 if (result<neighbors.size)
+                                                                                 {
+                                                                                     val exactSet=neighborsExact.toSet
+                                                                                     val compareSet=neighbors.toSet
+                                                                                     Some((element, (exactSet.map(_._2).max, exactSet.diff(compareSet), compareSet.map(_._2).max, compareSet.diff(exactSet))))
+                                                                                 }
+                                                                                 else
+                                                                                     None})
+     /*r.filter(_._1<100)
+                            .sortBy(_._1)
+                            .foreach(println(_))*/
                                
       println("The aprox. graph has "+commonEdges+" edges in common ("+(commonEdges.toDouble/totalEdges.toDouble)+")")
+      return r
     }
     def main(args: Array[String])
     {

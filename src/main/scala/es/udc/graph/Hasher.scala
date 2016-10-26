@@ -24,12 +24,17 @@ trait Hasher extends Serializable
   def getHashes(point:Vector, index:Long, radius:Double):List[(Hash, Long)]
 }
 
-class EuclideanLSHasher(dimension:Int) extends Hasher 
+object Hasher
+{
+  val DEFAULT_NUM_TABLES=5
+  val DEFAULT_KEY_LENGTH=3
+}
+
+class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int) extends Hasher 
 {
   private val OptimalW=4
-  val numTables=40
-  //val keyLength=5
-  val keyLength=200
+  val numTables=nTables
+  val keyLength=kLength
   val w=OptimalW
   
   val gaussianVectors=ofDim[Double](numTables, keyLength, dimension)
