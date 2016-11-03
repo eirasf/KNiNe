@@ -17,12 +17,14 @@ import es.udc.graph.utils.GraphUtils
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.log4j.{Level, Logger}
 
+import sys.process._
+
 
 object sparkContextSingleton
 {
   @transient private var instance: SparkContext = _
   private val conf : SparkConf = new SparkConf().setAppName("KNiNe")
-                                                .setMaster("local")
+                                                .setMaster("local[4]")
                                                 .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
                                                 .set("spark.broadcast.factory", "org.apache.spark.broadcast.HttpBroadcastFactory")
                                                 .set("spark.eventLog.enabled", "true")
@@ -51,19 +53,19 @@ Options:
     -k    Number of neighbors (default: """+KNiNe.DEFAULT_K+""")
     -m    Method used to compute the graph. Valid values: lsh, brute (default: """+KNiNe.DEFAULT_METHOD+""")
     -r    Starting radius (default: """+LSHKNNGraphBuilder.DEFAULT_RADIUS_START+""")
-    -n    Number of hashes per item (default: """+Hasher.DEFAULT_NUM_TABLES+""")
-    -l    Hash length (default: """+Hasher.DEFAULT_KEY_LENGTH+""")
     -t    Maximum comparisons per item (default: auto)
-    -c    File containing the graph to compare to (default: nothing)""")
+    -c    File containing the graph to compare to (default: nothing)
+
+Advanced LSH options:
+    -n    Number of hashes per item (default: auto)
+    -l    Hash length (default: auto)""")
     System.exit(-1)
   }
   def parseParams(p:Array[String]):Map[String, Any]=
   {
     val m=scala.collection.mutable.Map[String, Any]("num_neighbors" -> KNiNe.DEFAULT_K.toDouble,
                                                     "method" -> KNiNe.DEFAULT_METHOD,
-                                                    "radius_start" -> LSHKNNGraphBuilder.DEFAULT_RADIUS_START,
-                                                    "num_tables" -> Hasher.DEFAULT_NUM_TABLES.toDouble,
-                                                    "key_length" -> Hasher.DEFAULT_KEY_LENGTH.toDouble)
+                                                    "radius_start" -> LSHKNNGraphBuilder.DEFAULT_RADIUS_START)
     if (p.length<=1)
       showUsageAndExit()
     
@@ -140,8 +142,14 @@ Options:
                  "text"
                  
     val radius0=options("radius_start").asInstanceOf[Double]
-    val numTables=options("num_tables").asInstanceOf[Double].toInt
-    val keyLength=options("key_length").asInstanceOf[Double].toInt
+    val numTables=if (options.exists(_._1=="num_tables"))
+                      options("num_tables").asInstanceOf[Double].toInt
+                    else
+                      null
+    val keyLength=if (options.exists(_._1=="key_length"))
+                      options("key_length").asInstanceOf[Double].toInt
+                    else
+                      null
     val compareFile=if (options.exists(_._1=="compare"))
                       options("compare").asInstanceOf[String]
                     else
@@ -151,8 +159,8 @@ Options:
                        else
                          -1
                  
-//    println("Using "+method+" to compute "+numNeighbors+"NN graph for dataset "+justFileName)
-//    println("R0:"+radius0+" num_tables:"+numTables+" keyLength:"+keyLength+(if (maxComparisons!=null)" maxComparisons:"+maxComparisons else ""))
+    //println("Using "+method+" to compute "+numNeighbors+"NN graph for dataset "+justFileName)
+    //println("R0:"+radius0+(if (numTables!=null)" num_tables:"+numTables else "")+(if (keyLength!=null)" keyLength:"+keyLength else "")+(if (maxComparisons!=null)" maxComparisons:"+maxComparisons else ""))
     
     //Set up Spark Context
     val sc=sparkContextSingleton.getInstance()
@@ -172,61 +180,19 @@ Options:
                                                         })
                                           }
     
-    /*
-    //Normalize if necessary
-    val maxMins=data.map({case (point, index) => (point.features.toArray, point.features.toArray)})
-                    .reduce({case ((max1, min1), (max2, min2)) =>
-                              var maxLength=max1.length
-                              var longMax=max1
-                              var longMin=min1
-                              var shortMax=max2
-                              var shortMin=min2
-                              if (max2.length>maxLength)
-                              {
-                                maxLength=max2.length
-                                longMax=max2
-                                longMin=min2
-                                shortMax=max1
-                                shortMin=min1
-                              }
-                              for (i <- 0 until maxLength)
-                              {
-                                if (i<shortMax.length)
-                                {
-                                  if (longMax(i)<shortMax(i))
-                                    longMax(i)=shortMax(i)
-                                  if (longMin(i)>shortMin(i))
-                                    longMin(i)=shortMin(i)
-                                }
-                              }
-                              (longMax, longMin)
-                            })
-    val ranges=new Array[Double](maxMins._1.length)
-    for (i <- 0 until ranges.length)
-      ranges(i)=maxMins._1(i)-maxMins._2(i)
-    
-    val normalizedData=data.map({case (point, index) =>
-                                    val feats=point.features
-                                    if (feats.isInstanceOf[DenseVector])
-                                    {
-                                      val dense=feats.asInstanceOf[DenseVector].values
-                                      for (i <- 0 until dense.size)
-                                        dense(i)=(dense(i)-maxMins._2(i))/ranges(i)
-                                    }
-                                    else
-                                    {
-                                      val sparse=feats.asInstanceOf[SparseVector]
-                                      val indices=sparse.indices
-                                      val values=sparse.values
-                                      
-                                      for (i <- 0 until indices.length)
-                                        values(i)=(values(i)-maxMins._2(indices(i)))/ranges(indices(i))
-                                    }
-                                    (point, index)
-                                })
-    
-    println("Normalized dataset")
-    normalizedData.foreach(println(_))
+    /* DATASET INSPECTION - DEBUG
+    val summary=data.map({case x => (x._1.features.toArray,x._1.features.toArray,x._1.features.toArray)}).reduce({case ((as,aM,am),(bs,bM,bm)) => (as.zip(bs).map({case (ea,eb) => ea+eb}),aM.zip(bM).map({case (ea,eb) => Math.max(ea,eb)}),am.zip(bm).map({case (ea,eb) => Math.min(ea,eb)}))})
+    val total=data.count()
+    val medias=summary._1.map({ x => x/total })
+    val spans=summary._2.zip(summary._3).map({case (a,b) => (a-b)})
+    println(Vectors.dense(medias))
+    println(Vectors.dense(spans))
+    val stddevs=data.map(_._1.features.toArray.zip(medias).map({case (x,u) => (x-u)*(x-u) })).reduce({case (a,b) => a.zip(b).map({case (ea,eb) => ea+eb})}).map({ x => Math.sqrt(x/total) })
+    println(Vectors.dense(stddevs))
+    println(stddevs.max)
+    println(stddevs.min)
+    println(stddevs.sum/stddevs.length)
+    System.exit(0)
     */
     
     //val n=data.count()
@@ -280,17 +246,18 @@ Options:
     if (compareFile!=null)
     {
       //TEMP - Compare with ground truth
-      var firstComparison=CompareGraphs.compare(compareFile, fileName+"/part-00000")
+      var result=getFullResultFile(fileName)
+      var firstComparison=CompareGraphs.compare(compareFile, result)//fileName+"/part-00000")
       
-      /*if (method=="lsh")
+      if (method=="lsh")
       {
-        var refinedGraph=graph
+        var refinedGraph=graph.map({case (v, listNeighs) => (v, (0, listNeighs))})
         for (i <- 0 until 1)
         {
           println("Refined "+i)
           refinedGraph=LSHLookupKNNGraphBuilder.refineGraph(data, refinedGraph, numNeighbors)
           val fileNameR=fileName+"refined"+i
-          val edgesR=refinedGraph.flatMap({case (index, neighbors) =>
+          val edgesR=refinedGraph.flatMap({case (index, (c,neighbors)) =>
                                                    neighbors.map({case (destination, distance) =>
                                                                          (index, destination, distance)}).toSet})
           edgesR
@@ -298,7 +265,8 @@ Options:
               .saveAsTextFile(fileNameR)
               
           //TEMP - Compare with ground truth
-          var secondComparison=CompareGraphs.compare(compareFile, fileNameR+"/part-00000")
+          result=getFullResultFile(fileNameR)
+          var secondComparison=CompareGraphs.compare(compareFile, result)//fileNameR+"/part-00000")
           
           /* //DEBUG - Show how the graph has improved
           firstComparison.join(secondComparison)
@@ -310,10 +278,17 @@ Options:
                          .foreach(println(_))
           */
         }
-      }*/
+      }
     }
     /**/
     //Stop the Spark Context
     sc.stop()
+  }
+  
+  def getFullResultFile(fileName:String):String=
+  {
+    //println("Executing /home/eirasf/Escritorio/kNNTEMP/joinParts.sh "+fileName)
+    ("/home/eirasf/Escritorio/kNNTEMP/joinParts.sh "+fileName).!
+    return fileName+"/result"
   }
 }

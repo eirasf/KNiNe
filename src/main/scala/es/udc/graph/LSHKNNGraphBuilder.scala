@@ -21,14 +21,14 @@ abstract class LSHKNNGraphBuilder
     var currentData=data.map(_.swap)
     var radius=startRadius//5//0.1
 val totalElements=currentData.count()
-val bfOps:Double=totalElements*totalElements///2.0
+val bfOps:Double=totalElements*(totalElements-1)/2.0
 var totalOps:Long=0
 var numBuckets:Long=2
     var nodesLeft=currentData.count()
     
     //while(!currentData.isEmpty())
     //while(nodesLeft>numNeighbors)
-    while(numBuckets>1 && nodesLeft>1)
+    while((numBuckets>1 || nodesLeft>numNeighbors) && nodesLeft>1)
     {
       //Maps each element to numTables (hash, index) pairs with hashes of keyLenght length.
       val hashRDD=currentData.flatMap({case (index, point) =>
@@ -40,56 +40,86 @@ var numBuckets:Long=2
       
       //Groups elements mapped to the same hash
       //val hashBuckets=hashRDD.groupByKey()
-      val hashBuckets:RDD[(Hash, Iterable[Long])]=hashRDD.groupByKey().map({case (k, l) => (k, l.toSet)})
-numBuckets=hashBuckets.count()
+      var hashBuckets:RDD[(Hash, Iterable[Long], Int)]=hashRDD.groupByKey()
+                                                                .map({case (k, l) => (k, l.toSet)})
+                                                                .flatMap({case (k, s) => if (s.size>1) Some((k, s, s.size)) else None})
 //println("Buckets: "+numBuckets)
       /*
       //Print buckets
       println("Buckets:")
       hashBuckets.foreach({case (hash, indices) => println(hash.values.mkString(",") + " -> " + indices)})
       */
-      val filteredBuckets=hashBuckets.map(_._2.size).filter(_>1)
+      
       //println(filteredBuckets.count()+ " buckets ["+filteredBuckets.min()+", "+filteredBuckets.max()+"] elements")
-      val stepOps=filteredBuckets.map((_,1))
-                     .reduceByKey(_+_)
+      if (!hashBuckets.isEmpty())
+      {
+        numBuckets=hashBuckets.count()
+        var maxBucketSize=hashBuckets.map(_._3).max()
+        /* SPLIT BUCKETS THAT ARE TOO LARGE - TEST
+        
+        val MAX_BUCKET_SIZE=50
+        val RADIUS_STEP=2.5
+        var currentRadius=radius/RADIUS_STEP
+        val margin=1.5
+        val prevStepOps=hashBuckets.map({case (h,s,n) => (n,1)})
+                                     .reduceByKey(_+_)
+                                     .map({case x => x._2 * x._1 * x._1 /2.0}).sum()
+        while (maxBucketSize>MAX_BUCKET_SIZE*margin)
+        {
+          hashBuckets=splitLargeBuckets(data, hashBuckets, MAX_BUCKET_SIZE, currentRadius, hasher)
+          maxBucketSize=hashBuckets.map(_._3).max()
+          println("With radius "+currentRadius+" the largest bucket contains "+maxBucketSize+" elements")
+          currentRadius=currentRadius/RADIUS_STEP
+        }
+         */
+        
+        val stepOps=hashBuckets.map({case (h,s,n) => (n,1)})
+                       .reduceByKey(_+_)
+        //val postStepOps=stepOps.map({case x => x._2 * x._1 * x._1 /2.0}).sum()
+  
+  totalOps=totalOps+stepOps.map({case x => x._2 * x._1 * (x._1 - 1) /2.0}).sum().toLong
+  
+        stepOps.sortBy(_._1)
+                       .foreach({case x => println(x._2+" buckets with "+x._1+" elements => "+(x._2 * x._1 * x._1/2.0)+" ops")})
 
-totalOps=totalOps+stepOps.map({case x => x._2 * x._1 * x._1 /2.0}).sum().toLong
-
-//      stepOps.sortBy(_._1)
-//                     .foreach({case x => println(x._2+" buckets with "+x._1+" elements => "+(x._2 * x._1 * x._1/2.0)+" ops")})
-
-      
-      
-      //TODO Evaluate bucket size and increase/decrease radius without bruteforcing if necessary.
-      
-      var subgraph=getGraphFromBuckets(data, hashBuckets, numNeighbors)
-      
-      //subgraph.foreach(println(_))
-      //subgraph.sortBy(_._1).foreach({case (e,l) => println((e,l.sortBy(_._1)))})
-      
-      //Refine graph by checking neighbors of destination vertices
-//TODO TEST
-//subgraph=refineGraph(data,subgraph,numNeighbors)
-      
-      //Merge generate graph with existing one.
-      fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors)
-//fullGraph.filter(_._1<20).sortBy(_._1).foreach(println(_))
-      
-      //TODO TEST
-//fullGraph=refineGraph(data,fullGraph,numNeighbors)
-      
-      //TODO Check for duplicates
-      //Simplify dataset
-      currentData=simplifyDataset(currentData, fullGraph, numNeighbors, maxComparisonsPerItem)
-      
-      //TODO Possibly repartition
-      currentData.cache()
+        //println("Changed "+prevStepOps+"ops to "+postStepOps+"ops ("+(postStepOps/prevStepOps)+")")
+        
+        
+        //TODO Evaluate bucket size and increase/decrease radius without bruteforcing if necessary.
+        
+        var subgraph=getGraphFromBuckets(data, hashBuckets, numNeighbors)
+        
+        //subgraph.foreach(println(_))
+        //subgraph.sortBy(_._1).foreach({case (e,l) => println((e,l.sortBy(_._1)))})
+        
+        //Refine graph by checking neighbors of destination vertices
+  //TODO TEST
+  //subgraph=refineGraph(data,subgraph,numNeighbors)
+        
+        //Merge generate graph with existing one.
+        fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors)
+  //fullGraph.filter(_._1<20).sortBy(_._1).foreach(println(_))
+        
+        //TODO TEST
+  //fullGraph=refineGraph(data,fullGraph,numNeighbors)
+        
+        //TODO Check for duplicates
+        //Simplify dataset
+        currentData=simplifyDataset(currentData, fullGraph, numNeighbors, maxComparisonsPerItem)
+        
+        //TODO Possibly repartition
+        currentData.cache()
+        
+        //Increment radius
+        //radius*=1.5
+      }
+      //else
+      //  radius*=2
+      radius*=2
       nodesLeft=currentData.count()
-      //Increment radius
-      //radius*=2
-      radius*=2.0//1.4
+      
       //DEBUG
-      //println(nodesLeft+" nodes left. Radius:"+radius)
+      println(" ----- "+nodesLeft+" nodes left. Radius:"+radius)
       //fullGraph.foreach(println(_))
     }
     if (nodesLeft>0)
@@ -131,15 +161,30 @@ println((totalOps/bfOps)+"#")
     return fullGraph.map({case (node, (viewed, neighs)) => (node,neighs)})
   }
   
-  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasherKeyLength:Int, hasherNumTables:Int, startRadius:Double, maxComparisonsPerItem:Int):RDD[(Long, List[(Long, Double)])]
-  =computeGraph(data,
+  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasherKeyLength:Any, hasherNumTables:Any, startRadius:Double, maxComparisonsPerItem:Int):RDD[(Long, List[(Long, Double)])]
+  ={
+    var hKLength:Int=if (hasherKeyLength==null) 0-1 else hasherKeyLength.asInstanceOf[Int] 
+    var hNTables:Int=if (hasherNumTables==null) 0-1 else hasherNumTables.asInstanceOf[Int]
+    var mComparisons:Int=maxComparisonsPerItem
+    
+    if (hKLength<=0)
+      hKLength=Math.floor(Math.sqrt(dimension)+Math.sqrt(data.count()/dimension)-10).toInt
+    if (hNTables<=0)
+      hNTables=(hKLength/2+1)*(hKLength/2+1)
+    if (mComparisons<=0)
+      mComparisons=hNTables
+    
+    println("R0:"+startRadius+" num_tables:"+hNTables+" keyLength:"+hKLength+" maxComparisons:"+mComparisons)
+    
+    computeGraph(data,
                 numNeighbors,
                 dimension,
-                new EuclideanLSHasher(dimension, hasherKeyLength, hasherNumTables), //Default to an EuclideanHasher
+                new EuclideanLSHasher(dimension, hKLength, hNTables), //Default to an EuclideanHasher
                 startRadius,
-                maxComparisonsPerItem)
+                mComparisons)
+  }
   
-  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, hasherKeyLength:Int, hasherNumTables:Int, startRadius:Double, maxComparisonsPerItem:Int):RDD[(Long, List[(Long, Double)])]
+  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, hasherKeyLength:Any, hasherNumTables:Any, startRadius:Double, maxComparisonsPerItem:Int):RDD[(Long, List[(Long, Double)])]
             =computeGraph(data,
                            numNeighbors,
                            data.map({case (point, index) => point.features.size}).max(), //Get dimension from dataset
@@ -148,7 +193,9 @@ println((totalOps/bfOps)+"#")
                            startRadius,
                            maxComparisonsPerItem)
                                                                                                                             
-  protected def getGraphFromBuckets(data:RDD[(LabeledPoint,Long)], hashBuckets:RDD[(Hash, Iterable[Long])], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]
+  protected def splitLargeBuckets(data:RDD[(LabeledPoint,Long)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], maxBucketSize:Int, radius:Double, hasher:Hasher):RDD[(Hash, Iterable[Long], Int)]
+                           
+  protected def getGraphFromBuckets(data:RDD[(LabeledPoint,Long)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]
   
   protected def getGraphFromElementIndexLists(data:RDD[(LabeledPoint,Long)], elementIndexLists:RDD[Iterable[Long]], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]
   
@@ -257,7 +304,21 @@ println((totalOps/bfOps)+"#")
 object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
 {
   var lookup:BroadcastLookupProvider=null
-  override def getGraphFromBuckets(data:RDD[(LabeledPoint,Long)], hashBuckets:RDD[(Hash, Iterable[Long])], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]=
+  
+  override def splitLargeBuckets(data:RDD[(LabeledPoint,Long)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], maxBucketSize:Int, radius:Double, hasher:Hasher):RDD[(Hash, Iterable[Long], Int)]=
+  {
+    if (lookup!=null)
+      lookup.bData.destroy()
+    lookup=new BroadcastLookupProvider(data)
+    hashBuckets.flatMap({case (k, s, n) => s.map({ x => (k,x,n) })})
+                   .flatMap({case(k, x, bucketSize) => if (bucketSize<maxBucketSize) Some((k,x))
+                                                       else hasher.getHashes(lookup.lookup(x).features, x, radius).map({case (nk,i) => (k.concat(nk),i)})}) //Concat new key
+                   .groupByKey()
+                    .map({case (k, l) => (k, l.toSet)})
+                    .flatMap({case (k, s) => if (s.size>1) Some((k, s, s.size)) else None})
+  }
+  
+  override def getGraphFromBuckets(data:RDD[(LabeledPoint,Long)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]=
   {
     if (lookup!=null)
       lookup.bData.destroy()
@@ -267,7 +328,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
     val graph=hashBuckets.filter(_._2.size>1)
               //TODO Possibly repartition after filter
               //.repartition
-             .flatMap({case (hash, indices) =>
+             .flatMap({case (hash, indices, size) =>
                          //Remove duplicates from indices
                          val arrayIndices=indices.toSet.toArray
                          if (arrayIndices.length>1)

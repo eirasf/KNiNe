@@ -38,7 +38,7 @@ object CompareGraphs
 //println("The graph has "+totalEdges+" edges")
       
       val commonEdges=dataExact.groupByKey().join(data)
-                                            .map({case (element, (neighborsExact, neighbors)) => val intersect=neighbors.toSet.intersect(neighborsExact.toSet)
+                                            .map({case (element, (neighborsExact, neighbors)) => val intersect=neighbors.map(_._1).toSet.intersect(neighborsExact.map(_._1).toSet)
                                                                                                  var result=intersect.size
                                                                                                  if (result<neighbors.size)
                                                                                                      result=neighbors.map(_._2).toSet.intersect(neighborsExact.map(_._2).toSet).size
@@ -48,7 +48,7 @@ object CompareGraphs
                                             .sum()
                                             
       var r=dataExact.groupByKey().join(data)
-                            .flatMap({case (element, (neighborsExact, neighbors)) => val intersect=neighbors.toSet.intersect(neighborsExact.toSet)
+                            .flatMap({case (element, (neighborsExact, neighbors)) => val intersect=neighbors.map(_._1).toSet.intersect(neighborsExact.map(_._1).toSet)
                                                                                  var result=intersect.size
                                                                                  if (result<neighbors.size)
                                                                                  {
@@ -74,8 +74,8 @@ println(commonEdges.toDouble/totalEdges.toDouble)
         return
       }
       
-      val fileExact="/home/eirasf/Escritorio/car_graph-brute"//args(0)
-      val file="/home/eirasf/Escritorio/car_graph-lsh"//args(1)
+      val fileExact=args(0)
+      val file=args(1)
       
       //Set up Spark Context
       val sc=sparkContextSingleton.getInstance()

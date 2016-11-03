@@ -9,10 +9,14 @@ import org.apache.spark.mllib.linalg.SparseVector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.regression.LabeledPoint
 
-class Hash(val values: Array[Integer]) extends Serializable
+class Hash(var values: Array[Integer]) extends Serializable
 {
     override val hashCode = values.deep.hashCode
     override def equals(obj:Any) = obj.isInstanceOf[Hash] && obj.asInstanceOf[Hash].values.deep == this.values.deep
+    def concat(other:Hash):Hash=
+    {
+      return new Hash(this.values ++ other.values)
+    }
 }
 
 trait Hasher extends Serializable
