@@ -28,7 +28,7 @@ object sparkContextSingleton
                                                 .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
                                                 .set("spark.broadcast.factory", "org.apache.spark.broadcast.HttpBroadcastFactory")
                                                 .set("spark.eventLog.enabled", "true")
-                                                .set("spark.eventLog.dir","file:///home/eirasf/Escritorio/sparklog-local")
+                                                .set("spark.eventLog.dir","file:///home/eirasf/Escritorio/datasets-kNN/sparklog-local")
                                                 .set("spark.kryoserializer.buffer.max", "512")
                                                 .set("spark.driver.maxResultSize", "2048")
 
@@ -205,7 +205,7 @@ Advanced LSH options:
     graph.foreach(println(_))
     
     */
-    
+val timeStart=System.currentTimeMillis();    
     val graph:RDD[(Long,List[(Long,Double)])]=if (method=="lsh")
                                                 /* LOOKUP VERSION */
                                                 LSHLookupKNNGraphBuilder.computeGraph(data, numNeighbors, keyLength, numTables, radius0, maxComparisons)
@@ -226,7 +226,7 @@ Advanced LSH options:
     //DEBUG
     var counted=edges.map({case x=>(x._1,1)}).reduceByKey(_+_).sortBy(_._1)
     var forCount=counted.map(_._2)
-    //println("Obtained "+forCount.sum()+" edges for "+forCount.count()+" nodes")
+    println("Obtained "+forCount.sum()+" edges for "+forCount.count()+" nodes in "+(System.currentTimeMillis()-timeStart)+" milliseconds")
     
     //Save to file
     var fileName=options("output").asInstanceOf[String]
@@ -238,7 +238,7 @@ Advanced LSH options:
       fileName=fileNameOriginal+"-"+i
     }
     edges
-        .sortBy(_._1) //TEMP
+        //.sortBy(_._1) //TEMP
         .saveAsTextFile(fileName)
         
     /*DEBUG*/
@@ -247,7 +247,8 @@ Advanced LSH options:
     {
       //TEMP - Compare with ground truth
       var result=getFullResultFile(fileName)
-      var firstComparison=CompareGraphs.compare(compareFile, result)//fileName+"/part-00000")
+      var firstComparison=CompareGraphs.compare(compareFile, result)
+      CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), result)
       
       if (method=="lsh")
       {
@@ -255,18 +256,24 @@ Advanced LSH options:
         for (i <- 0 until 1)
         {
           println("Refined "+i)
+val timeStartR=System.currentTimeMillis();          
           refinedGraph=LSHLookupKNNGraphBuilder.refineGraph(data, refinedGraph, numNeighbors)
           val fileNameR=fileName+"refined"+i
           val edgesR=refinedGraph.flatMap({case (index, (c,neighbors)) =>
                                                    neighbors.map({case (destination, distance) =>
                                                                          (index, destination, distance)}).toSet})
+val totalElements=data.count()
+val e=edgesR.first()
+println("Added "+(System.currentTimeMillis()-timeStartR)+" milliseconds")
+          
           edgesR
-              .sortBy(_._1) //TEMP
+              //.sortBy(_._1) //TEMP
               .saveAsTextFile(fileNameR)
               
           //TEMP - Compare with ground truth
           result=getFullResultFile(fileNameR)
-          var secondComparison=CompareGraphs.compare(compareFile, result)//fileNameR+"/part-00000")
+          var secondComparison=CompareGraphs.compare(compareFile, result)
+          CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), result)
           
           /* //DEBUG - Show how the graph has improved
           firstComparison.join(secondComparison)
@@ -288,7 +295,7 @@ Advanced LSH options:
   def getFullResultFile(fileName:String):String=
   {
     //println("Executing /home/eirasf/Escritorio/kNNTEMP/joinParts.sh "+fileName)
-    ("/home/eirasf/Escritorio/kNNTEMP/joinParts.sh "+fileName).!
+    ("/home/eirasf/Escritorio/datasets-kNN/scripts/joinParts.sh "+fileName).!
     return fileName+"/result"
   }
 }

@@ -264,13 +264,18 @@ println((totalOps/bfOps)+"#")
  */
   /*private */def refineGraph(data:RDD[(LabeledPoint, Long)], g:RDD[(Long, (Int,List[(Long, Double)]))], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]=
   {
-    var subgraph=getGraphFromIndexPairs(data,
-                                        g.flatMap({case (node, (viewed,neighbors)) => neighbors.map({case (dest, dist) => (dest, node)})})
+    var pairsWithNewNeighbors:RDD[(Long, Long)]=g.flatMap({case (node, (viewed,neighbors)) => neighbors.map({case (dest, dist) => (dest, node)})})
                                          .join(g)
                                          .flatMap({case (dest, (node, (v,neighsNeighs))) => neighsNeighs.flatMap({case (d, dist) => if (node!=d)
                                                                                                                                   Some((node, d))
                                                                                                                                 else
-                                                                                                                                  None})}),
+    
+                                                                                                                                  None})})
+    println("Added "+pairsWithNewNeighbors.count()+" comparisons")
+    pairsWithNewNeighbors=pairsWithNewNeighbors.groupByKey().flatMap({case (d, neighs) => neighs.toSet.toArray.map({case x => (d, x)})})
+    println("Reduced to "+pairsWithNewNeighbors.count()+" comparisons")
+    var subgraph=getGraphFromIndexPairs(data,
+                                        pairsWithNewNeighbors,
                                         numNeighbors)
     return mergeSubgraphs(g, subgraph, numNeighbors)
   }
