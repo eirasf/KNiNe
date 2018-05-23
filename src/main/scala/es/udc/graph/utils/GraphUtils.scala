@@ -1,11 +1,12 @@
 package es.udc.graph.utils
 
-import org.apache.spark.graphx.{Graph, Edge}
+import org.apache.spark.graphx.Edge
+import org.apache.spark.graphx.Graph
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 
-import Selection._
-
+import Selection.chooseMedianOfMedians
+import Selection.findKMedian
 import es.udc.graph.Neighbor
 
 /**
