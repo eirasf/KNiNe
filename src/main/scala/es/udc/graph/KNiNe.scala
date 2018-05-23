@@ -24,11 +24,9 @@ object sparkContextSingleton
 {
   @transient private var instance: SparkContext = _
   private val conf : SparkConf = new SparkConf().setAppName("KNiNe")
-                                                .setMaster("local[4]")
+                                                //.setMaster("local[4]")
                                                 .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
                                                 .set("spark.broadcast.factory", "org.apache.spark.broadcast.HttpBroadcastFactory")
-                                                .set("spark.eventLog.enabled", "true")
-                                                .set("spark.eventLog.dir","file:///home/eirasf/Escritorio/datasets-kNN/sparklog-local")
                                                 .set("spark.kryoserializer.buffer.max", "512")
                                                 .set("spark.driver.maxResultSize", "2048")
 
