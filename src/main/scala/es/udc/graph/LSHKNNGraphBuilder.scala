@@ -15,7 +15,7 @@ object LSHKNNGraphBuilder
 
 abstract class LSHKNNGraphBuilder
 {
-  protected final def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasher:Hasher, startRadius:Double, maxComparisonsPerItem:Int):RDD[(Long, List[(Long, Double)])]=
+  protected final def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasher:Hasher, startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider):(RDD[(Long, List[(Long, Double)])],LookupProvider)=
   {
     var fullGraph:RDD[(Long, (Int,List[(Long, Double)]))]=null
     var currentData=data.map(_.swap)
@@ -87,7 +87,7 @@ var numBuckets:Long=2
         
         //TODO Evaluate bucket size and increase/decrease radius without bruteforcing if necessary.
         
-        var subgraph=getGraphFromBuckets(data, hashBuckets, numNeighbors)
+        var subgraph=getGraphFromBuckets(data, hashBuckets, numNeighbors, measurer)
         
         //subgraph.foreach(println(_))
         //subgraph.sortBy(_._1).foreach({case (e,l) => println((e,l.sortBy(_._1)))})
@@ -97,7 +97,7 @@ var numBuckets:Long=2
   //subgraph=refineGraph(data,subgraph,numNeighbors)
         
         //Merge generate graph with existing one.
-        fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors)
+        fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors, measurer)
   //fullGraph.filter(_._1<20).sortBy(_._1).foreach(println(_))
         
         //TODO TEST
@@ -136,12 +136,12 @@ var numBuckets:Long=2
                                                    .reduceByKey({case (dl1,dl2) => dl1 ++ dl2})
                                                    .map({case (o,dl) => dl + o})
 totalOps=totalOps+neighbors.map({case x => x.size * x.size }).sum().toLong
-        val subgraph=getGraphFromElementIndexLists(data, neighbors, numNeighbors)
+        val subgraph=getGraphFromElementIndexLists(data, neighbors, numNeighbors, measurer)
         
         if (!subgraph.isEmpty())
         {
 //subgraph.foreach(println(_))
-          fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors)
+          fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors, measurer)
           currentData=simplifyDataset(currentData, fullGraph, numNeighbors, maxComparisonsPerItem)
           nodesLeft=currentData.count() 
         }
@@ -150,18 +150,18 @@ totalOps=totalOps+neighbors.map({case x => x.size * x.size }).sum().toLong
       if (nodesLeft>0) //No solution other than check this points with every other
       {
         val pairs=currentData.cartesian(fullGraph.map({case (point, neighbors) => point}))
-        val subgraph=getGraphFromPairs(data, pairs, numNeighbors)
-        fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors)
+        val subgraph=getGraphFromPairs(data, pairs, numNeighbors, measurer)
+        fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors, measurer)
 totalOps=totalOps+pairs.count()
       }
     }
 //println("Operations wrt bruteforce: "+(totalOps/bfOps))
 println((totalOps/bfOps)+"#")
     
-    return fullGraph.map({case (node, (viewed, neighs)) => (node,neighs)})
+    return (fullGraph.map({case (node, (viewed, neighs)) => (node,neighs)}),new BroadcastLookupProvider(data))
   }
   
-  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasherKeyLength:Any, hasherNumTables:Any, startRadius:Double, maxComparisonsPerItem:Int):RDD[(Long, List[(Long, Double)])]
+  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasherKeyLength:Any, hasherNumTables:Any, startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider):(RDD[(Long, List[(Long, Double)])],LookupProvider)
   ={
     var hKLength:Int=if (hasherKeyLength==null) 0-1 else hasherKeyLength.asInstanceOf[Int] 
     var hNTables:Int=if (hasherNumTables==null) 0-1 else hasherNumTables.asInstanceOf[Int]
@@ -181,27 +181,29 @@ println((totalOps/bfOps)+"#")
                 dimension,
                 new EuclideanLSHasher(dimension, hKLength, hNTables), //Default to an EuclideanHasher
                 startRadius,
-                mComparisons)
+                mComparisons,
+                measurer)
   }
   
-  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, hasherKeyLength:Any, hasherNumTables:Any, startRadius:Double, maxComparisonsPerItem:Int):RDD[(Long, List[(Long, Double)])]
+  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, hasherKeyLength:Any, hasherNumTables:Any, startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider):(RDD[(Long, List[(Long, Double)])],LookupProvider)
             =computeGraph(data,
                            numNeighbors,
                            data.map({case (point, index) => point.features.size}).max(), //Get dimension from dataset
                            hasherKeyLength,
                            hasherNumTables,
                            startRadius,
-                           maxComparisonsPerItem)
+                           maxComparisonsPerItem,
+                           measurer)
                                                                                                                             
   protected def splitLargeBuckets(data:RDD[(LabeledPoint,Long)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], maxBucketSize:Int, radius:Double, hasher:Hasher):RDD[(Hash, Iterable[Long], Int)]
                            
-  protected def getGraphFromBuckets(data:RDD[(LabeledPoint,Long)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]
+  protected def getGraphFromBuckets(data:RDD[(LabeledPoint,Long)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, (Int,List[(Long, Double)]))]
   
-  protected def getGraphFromElementIndexLists(data:RDD[(LabeledPoint,Long)], elementIndexLists:RDD[Iterable[Long]], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]
+  protected def getGraphFromElementIndexLists(data:RDD[(LabeledPoint,Long)], elementIndexLists:RDD[Iterable[Long]], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, (Int,List[(Long, Double)]))]
   
-  protected def getGraphFromPairs(data:RDD[(LabeledPoint,Long)], pairs:RDD[((Long, LabeledPoint), Long)], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]
+  protected def getGraphFromPairs(data:RDD[(LabeledPoint,Long)], pairs:RDD[((Long, LabeledPoint), Long)], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, (Int,List[(Long, Double)]))]
   
-  protected def getGraphFromIndexPairs(data:RDD[(LabeledPoint,Long)], pairs:RDD[(Long, Long)], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]
+  protected def getGraphFromIndexPairs(data:RDD[(LabeledPoint,Long)], pairs:RDD[(Long, Long)], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, (Int,List[(Long, Double)]))]
   
   private def simplifyDataset(dataset:RDD[(Long, LabeledPoint)], currentGraph:RDD[(Long, (Int,List[(Long, Double)]))], numNeighbors:Int, maxComparisonsPerItem:Int):RDD[(Long, LabeledPoint)]=
   {
@@ -248,7 +250,7 @@ println((totalOps/bfOps)+"#")
                                                                   })
   }
   
-  private def mergeSubgraphs(g1:RDD[(Long, (Int,List[(Long, Double)]))], g2:RDD[(Long, (Int,List[(Long, Double)]))], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]=
+  private def mergeSubgraphs(g1:RDD[(Long, (Int,List[(Long, Double)]))], g2:RDD[(Long, (Int,List[(Long, Double)]))], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, (Int,List[(Long, Double)]))]=
   {
     if (g1==null) return g2
     if (g2==null) return g1
@@ -262,7 +264,7 @@ println((totalOps/bfOps)+"#")
  * @param g
  * @return Resulting graph of searching for closer neighbors in the neighbors of the neighbors for each node
  */
-  /*private */def refineGraph(data:RDD[(LabeledPoint, Long)], g:RDD[(Long, (Int,List[(Long, Double)]))], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]=
+  /*private */def refineGraph(data:RDD[(LabeledPoint, Long)], g:RDD[(Long, (Int,List[(Long, Double)]))], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, (Int,List[(Long, Double)]))]=
   {
     var pairsWithNewNeighbors:RDD[(Long, Long)]=g.flatMap({case (node, (viewed,neighbors)) => neighbors.map({case (dest, dist) => (dest, node)})})
                                          .join(g)
@@ -276,8 +278,9 @@ println((totalOps/bfOps)+"#")
     println("Reduced to "+pairsWithNewNeighbors.count()+" comparisons")
     var subgraph=getGraphFromIndexPairs(data,
                                         pairsWithNewNeighbors,
-                                        numNeighbors)
-    return mergeSubgraphs(g, subgraph, numNeighbors)
+                                        numNeighbors,
+                                        measurer)
+    return mergeSubgraphs(g, subgraph, numNeighbors, measurer)
   }
   
   val mergeNeighborLists = (neighbors1:List[(Long, Double)], neighbors2:List[(Long, Double)], numNeighbors:Int) =>
@@ -323,7 +326,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
                     .flatMap({case (k, s) => if (s.size>1) Some((k, s, s.size)) else None})
   }
   
-  override def getGraphFromBuckets(data:RDD[(LabeledPoint,Long)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]=
+  override def getGraphFromBuckets(data:RDD[(LabeledPoint,Long)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, (Int,List[(Long, Double)]))]=
   {
     if (lookup!=null)
       lookup.bData.destroy()
@@ -337,7 +340,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
                          //Remove duplicates from indices
                          val arrayIndices=indices.toSet.toArray
                          if (arrayIndices.length>1)
-                           BruteForceKNNGraphBuilder.computeGraph(arrayIndices, lookup, numNeighbors)
+                           BruteForceKNNGraphBuilder.computeGraph(arrayIndices, lookup, numNeighbors, measurer)
                          else
                            Nil
                          })
@@ -348,7 +351,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
     graph
   }
   
-  override def getGraphFromElementIndexLists(data:RDD[(LabeledPoint,Long)], elementIndexLists:RDD[Iterable[Long]], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]=
+  override def getGraphFromElementIndexLists(data:RDD[(LabeledPoint,Long)], elementIndexLists:RDD[Iterable[Long]], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, (Int,List[(Long, Double)]))]=
   {
     if (lookup!=null)
       lookup.bData.destroy()
@@ -362,7 +365,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
                          //Remove duplicates from indices
                          val arrayIndices=indices.toSet.toArray
                          if (arrayIndices.length>1)
-                           BruteForceKNNGraphBuilder.computeGraph(arrayIndices, lookup, numNeighbors)
+                           BruteForceKNNGraphBuilder.computeGraph(arrayIndices, lookup, numNeighbors, measurer)
                          else
                            Nil
                          })
@@ -374,12 +377,12 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
     graph
   }
   
-  override def getGraphFromPairs(data:RDD[(LabeledPoint,Long)], pairs:RDD[((Long, LabeledPoint), Long)], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]=
+  override def getGraphFromPairs(data:RDD[(LabeledPoint,Long)], pairs:RDD[((Long, LabeledPoint), Long)], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, (Int,List[(Long, Double)]))]=
   {
     val lookup=new BroadcastLookupProvider(data)
     
     //Discard single element hashes and for the rest get every possible pairing to build graph
-    val graph=pairs.map({case ((i1,p1),i2) => (i1, (1,List((i2, BruteForceKNNGraphBuilder.getDistance(p1, lookup.lookup(i2))))))})
+    val graph=pairs.map({case ((i1,p1),i2) => (i1, (1,List((i2, measurer.getDistance(p1, lookup.lookup(i2))))))})
              //Merge neighbors found for the same element in different hash buckets
              .reduceByKey({case ((v1,neighbors1), (v2,neighbors2)) =>
                              (v1+v2,mergeNeighborLists(neighbors1, neighbors2, numNeighbors))
@@ -388,12 +391,12 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
     graph
   }
   
-  override def getGraphFromIndexPairs(data:RDD[(LabeledPoint,Long)], pairs:RDD[(Long, Long)], numNeighbors:Int):RDD[(Long, (Int,List[(Long, Double)]))]=
+  override def getGraphFromIndexPairs(data:RDD[(LabeledPoint,Long)], pairs:RDD[(Long, Long)], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, (Int,List[(Long, Double)]))]=
   {
     val lookup=new BroadcastLookupProvider(data)
     
     //Discard single element hashes and for the rest get every possible pairing to build graph
-    val graph=pairs.map({case (i1,i2) => (i1, (1,List((i2, BruteForceKNNGraphBuilder.getDistance(lookup.lookup(i1), lookup.lookup(i2))))))})
+    val graph=pairs.map({case (i1,i2) => (i1, (1,List((i2, measurer.getDistance(lookup.lookup(i1), lookup.lookup(i2))))))})
              //Merge neighbors found for the same element in different hash buckets
              .reduceByKey({case ((v1,neighbors1), (v2,neighbors2)) =>
                              (v1+v2,mergeNeighborLists(neighbors1, neighbors2, numNeighbors))

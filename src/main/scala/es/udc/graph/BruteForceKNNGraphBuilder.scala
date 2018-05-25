@@ -64,7 +64,7 @@ object BruteForceKNNGraphBuilder
     }
   }
   
-  def computeGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int):List[(Long, (Int,List[(Long, Double)]))]=
+  def computeGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int, measurer:DistanceProvider):List[(Long, (Int,List[(Long, Double)]))]=
   {
     val closestNeighbors=new Array[NeighborsForElement](arrayIndices.length) //For each element stores the farthest near neighbor so far and a list of near neighbors with their distances
     
@@ -77,8 +77,8 @@ object BruteForceKNNGraphBuilder
     {
       for(j <- i+1 until arrayIndices.length)
       {
-         val d=getDistance(lookup.lookup(arrayIndices(i)),
-                           lookup.lookup(arrayIndices(j)))
+         val d=measurer.getDistance(lookup.lookup(arrayIndices(i)),
+                                     lookup.lookup(arrayIndices(j)))
          
          //println("D("+arrayIndices(i)+"<->"+arrayIndices(j)+")="+d+"#"+feat1.toString()+feat2.toString())
          
@@ -97,15 +97,12 @@ object BruteForceKNNGraphBuilder
     graph
   }
   
-  //TODO Different distances could be used
-  def getDistance(p1:LabeledPoint, p2:LabeledPoint):Double=Vectors.sqdist(p1.features, p2.features)
-  
   def computeGraph(data:RDD[(LabeledPoint, Long)], numNeighbors:Int):List[(Long, (Int,List[(Long, Double)]))]=
   {
-    computeGraph(data.map(_._2).collect(), new BroadcastLookupProvider(data), numNeighbors)
+    computeGraph(data.map(_._2).collect(), new BroadcastLookupProvider(data), numNeighbors, new EuclideanDistanceProvider())
   }
   
-  def parallelComputeGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int):RDD[(Long, List[(Long, Double)])]=
+  def parallelComputeGroupedGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, List[(Int,List[(Long, Double)])])]=
   {
     var sc=sparkContextSingleton.getInstance()
     
@@ -113,28 +110,39 @@ object BruteForceKNNGraphBuilder
     
     var rddPairs=rddIndices.cartesian(rddIndices)
     
+    //TODO Check whether filtering i<j improves performance
     return rddPairs.flatMap({case (i,j) => if (i==j)
                                              None
                                            else
                                            {
-                                             val d=getDistance(lookup.lookup(i),
-                                                               lookup.lookup(j))
+                                             val x=lookup.lookup(i)
+                                             val y=lookup.lookup(j)
+                                             val d=measurer.getDistance(x,y)
                                              
                                              val n=new NeighborsForElement(numNeighbors)
                                              n.addElement(j, d)
-                                             Some((i, n))
+                                             Some(((i,grouper.getGroupId(x)), n))
                                            }
                 })
             .reduceByKey({case (n1, n2) => n1.addElements(n2)
                                            n1
                 })
-            .map({case (index, neighbors) => (index,
-                                              neighbors.listNeighbors.map { x => (x.index, x.distance) })
+            .map({case ((index,groupingId), neighbors) => (index,
+                                              List((groupingId,neighbors.listNeighbors.map { x => (x.index, x.distance) })))
                 })
+            .reduceByKey({case (l1,l2) => l1++l2})
   }
   
-  def parallelComputeGraph(data:RDD[(LabeledPoint, Long)], numNeighbors:Int):RDD[(Long, List[(Long, Double)])]=
+  def parallelComputeGraph(data:RDD[(LabeledPoint, Long)], numNeighbors:Int):(RDD[(Long, List[(Long, Double)])],LookupProvider)=
+    parallelComputeGraph(data, numNeighbors, new EuclideanDistanceProvider())
+    
+  def parallelComputeGraph(data:RDD[(LabeledPoint, Long)], numNeighbors:Int, measurer:DistanceProvider):(RDD[(Long, List[(Long, Double)])],LookupProvider)=
   {
-    parallelComputeGraph(data.map(_._2).collect(), new BroadcastLookupProvider(data), numNeighbors)
+    val lookup=new BroadcastLookupProvider(data)
+    val graph=parallelComputeGroupedGraph(data.map(_._2).collect(), lookup, numNeighbors, measurer, new DummyGroupingProvider())
+    return (graph.map(
+               {case (i1,groupedNeighbors) =>
+                 (i1,groupedNeighbors.head._2)
+               }),lookup)
   }
 }

@@ -33,7 +33,7 @@ object sparkContextSingleton
   def getInstance(): SparkContext=
   {
     if (instance == null)
-      instance = new SparkContext(conf)
+      instance = SparkContext.getOrCreate(conf)//new SparkContext(conf)
     instance
   }  
 }
@@ -204,9 +204,9 @@ Advanced LSH options:
     
     */
 val timeStart=System.currentTimeMillis();    
-    val graph:RDD[(Long,List[(Long,Double)])]=if (method=="lsh")
+    val (graph,lookup)=if (method=="lsh")
                                                 /* LOOKUP VERSION */
-                                                LSHLookupKNNGraphBuilder.computeGraph(data, numNeighbors, keyLength, numTables, radius0, maxComparisons)
+                                                LSHLookupKNNGraphBuilder.computeGraph(data, numNeighbors, keyLength, numTables, radius0, maxComparisons, new EuclideanDistanceProvider())
                                               else
                                                 /* BRUTEFORCE VERSION */
                                                 BruteForceKNNGraphBuilder.parallelComputeGraph(data, numNeighbors)
@@ -255,7 +255,7 @@ val timeStart=System.currentTimeMillis();
         {
           println("Refined "+i)
 val timeStartR=System.currentTimeMillis();          
-          refinedGraph=LSHLookupKNNGraphBuilder.refineGraph(data, refinedGraph, numNeighbors)
+          refinedGraph=LSHLookupKNNGraphBuilder.refineGraph(data, refinedGraph, numNeighbors, new EuclideanDistanceProvider())
           val fileNameR=fileName+"refined"+i
           val edgesR=refinedGraph.flatMap({case (index, (c,neighbors)) =>
                                                    neighbors.map({case (destination, distance) =>
