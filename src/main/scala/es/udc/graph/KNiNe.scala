@@ -141,13 +141,13 @@ Advanced LSH options:
                  
     val radius0=options("radius_start").asInstanceOf[Double]
     val numTables=if (options.exists(_._1=="num_tables"))
-                      options("num_tables").asInstanceOf[Double].toInt
+                      Some(options("num_tables").asInstanceOf[Double].toInt)
                     else
-                      null
+                      None
     val keyLength=if (options.exists(_._1=="key_length"))
-                      options("key_length").asInstanceOf[Double].toInt
+                      Some(options("key_length").asInstanceOf[Double].toInt)
                     else
-                      null
+                      None
     val compareFile=if (options.exists(_._1=="compare"))
                       options("compare").asInstanceOf[String]
                     else

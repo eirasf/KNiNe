@@ -64,15 +64,19 @@ object BruteForceKNNGraphBuilder
     }
   }
   
-  def computeGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int, measurer:DistanceProvider):List[(Long, (Int,List[(Long, Double)]))]=
+  def computeGroupedGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):List[(Long, (Int,List[(Int,List[(Long, Double)])]))]=
   {
-    val closestNeighbors=new Array[NeighborsForElement](arrayIndices.length) //For each element stores the farthest near neighbor so far and a list of near neighbors with their distances
+    val closestNeighbors=new Array[Array[NeighborsForElement]](arrayIndices.length) //For each element stores the farthest near neighbor so far and a list of near neighbors with their distances
     
     //The computed distances could be stored elsewhere so that there is no symmetric repetition
     for(i <- 0 until arrayIndices.length)
-      closestNeighbors(i)=new NeighborsForElement(numNeighbors)
+    {
+      closestNeighbors(i)=new Array[NeighborsForElement](grouper.numGroups)
+      for(j <- 0 until grouper.numGroups)
+        closestNeighbors(i)(j)=new NeighborsForElement(numNeighbors)
+    }
     
-    var graph:List[(Long, (Int,List[(Long, Double)]))]=Nil //Graph to be returned
+    var graph:List[(Long, (Int,List[(Int,List[(Long, Double)])]))]=Nil //Graph to be returned
     for(i <- 0 until arrayIndices.length)
     {
       for(j <- i+1 until arrayIndices.length)
@@ -82,25 +86,67 @@ object BruteForceKNNGraphBuilder
          
          //println("D("+arrayIndices(i)+"<->"+arrayIndices(j)+")="+d+"#"+feat1.toString()+feat2.toString())
          
-         closestNeighbors(i).addElement(arrayIndices(j), d)
-         closestNeighbors(j).addElement(arrayIndices(i), d)
+         val x=lookup.lookup(arrayIndices(i))
+         val y=lookup.lookup(arrayIndices(j))
+         val grIdX=grouper.getGroupId(x)
+         val grIdY=grouper.getGroupId(y)
+         
+         var xList=closestNeighbors(i)(grIdY)
+         var yList=closestNeighbors(j)(grIdX)
+                                     
+         xList.addElement(arrayIndices(j), d)
+         yList.addElement(arrayIndices(i), d)
       }
       
-      //Unwrap the structure into graph edges
-      var neighbors:List[(Long, Double)]=Nil
-      for (j <- closestNeighbors(i).listNeighbors)
-        neighbors=(j.index, j.distance) :: neighbors
-      //TODO Add whatever more information is useful (distances, number of elements hit).
-      graph = (arrayIndices(i), (arrayIndices.length-1, neighbors)) :: graph
+      /*var groupedNeighbors:List[(Int,List[(Long, Double)])]=Nil //Graph to be returned
+      
+      for ((grId,neighborList) <- closestNeighbors(i))
+      {
+        //Unwrap the structure into graph edges
+        var neighbors:List[(Long, Double)]=Nil
+        for (j <- neighborList.listNeighbors)
+          neighbors=(j.index, j.distance) :: neighbors
+        //TODO Add whatever more information is useful (distances, number of elements hit).
+        groupedNeighbors = (grId, neighbors) :: groupedNeighbors
+      }
+      graph = (arrayIndices(i), (arrayIndices.length-1, groupedNeighbors)) :: graph*/
+      
+      graph = (arrayIndices(i),
+                (arrayIndices.length-1,
+                 closestNeighbors(i).indices.map(
+                     {
+                       case groupingIndex => var neighbors:List[(Long, Double)]=Nil
+                                             for (j <- closestNeighbors(i)(groupingIndex).listNeighbors)
+                                               neighbors=(j.index, j.distance) :: neighbors
+                                             (groupingIndex,neighbors)
+                     }).toList)
+              ) :: graph
     }
     
     graph
   }
   
-  def computeGraph(data:RDD[(LabeledPoint, Long)], numNeighbors:Int):List[(Long, (Int,List[(Long, Double)]))]=
+  def computeGroupedGraph(data:RDD[(LabeledPoint, Long)], numNeighbors:Int):List[(Long, (Int,List[(Int,List[(Long, Double)])]))]=
   {
-    computeGraph(data.map(_._2).collect(), new BroadcastLookupProvider(data), numNeighbors, new EuclideanDistanceProvider())
+    val arrayIndices=data.map(_._2).collect()
+    val lookup=new BroadcastLookupProvider(data)
+    computeGroupedGraph(arrayIndices, new BroadcastLookupProvider(data), numNeighbors)
   }
+    
+  def computeGroupedGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int):List[(Long, (Int,List[(Int,List[(Long, Double)])]))]=
+    computeGroupedGraph(arrayIndices, lookup, numNeighbors, new EuclideanDistanceProvider())
+    
+  def computeGroupedGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int, measurer:DistanceProvider):List[(Long, (Int,List[(Int,List[(Long, Double)])]))]=
+    computeGroupedGraph(arrayIndices, lookup, numNeighbors, measurer, new DummyGroupingProvider())
+  
+  /*def computeGroupedGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):List[(Long, (Int,List[(Int,List[(Long, Double)])]))]=
+  {
+    val graph=computeGroupedGraph(arrayIndices, lookup, numNeighbors, measurer, grouper)
+    return graph.map(
+        {
+          case (index, (numVisited, groupedNeighbors)) => (index, (numVisited,groupedNeighbors.head._2))
+        })
+  }*/
   
   def parallelComputeGroupedGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, List[(Int,List[(Long, Double)])])]=
   {
