@@ -170,7 +170,7 @@ println((totalOps/bfOps)+"#")
     return (fullGraph.map({case (node, (viewed, neighs)) => (node,neighs)}),new BroadcastLookupProvider(data))
   }
   
-  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasherKeyLength:Option[Int], hasherNumTables:Option[Int], startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider):(RDD[(Long, List[(Long, Double)])],LookupProvider)
+  def computeGroupedGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasherKeyLength:Option[Int], hasherNumTables:Option[Int], startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider, grouper:GroupingProvider):(RDD[(Long, List[(Int,List[(Long, Double)])])],LookupProvider)
   ={
     var hKLength:Int=if (hasherKeyLength==null) 0-1 else hasherKeyLength.get 
     var hNTables:Int=if (hasherNumTables==null) 0-1 else hasherNumTables.get
@@ -185,14 +185,19 @@ println((totalOps/bfOps)+"#")
     
     println("R0:"+startRadius+" num_tables:"+hNTables+" keyLength:"+hKLength+" maxComparisons:"+mComparisons)
     
-    val (graph,lookup)=computeGroupedGraph(data,
-                                  numNeighbors,
-                                  dimension,
-                                  new EuclideanLSHasher(dimension, hKLength, hNTables), //Default to an EuclideanHasher
-                                  startRadius,
-                                  mComparisons,
-                                  measurer,
-                                  new DummyGroupingProvider())
+    return computeGroupedGraph(data,
+                                numNeighbors,
+                                dimension,
+                                new EuclideanLSHasher(dimension, hKLength, hNTables), //Default to an EuclideanHasher
+                                startRadius,
+                                mComparisons,
+                                measurer,
+                                grouper)
+  }
+  
+  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasherKeyLength:Option[Int], hasherNumTables:Option[Int], startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider):(RDD[(Long, List[(Long, Double)])],LookupProvider)=
+  {
+    val (graph,lookup)=computeGroupedGraph(data, numNeighbors, dimension, hasherKeyLength, hasherNumTables, startRadius, maxComparisonsPerItem, measurer, new DummyGroupingProvider())
     return (graph.map(
         {
           case (index, groupedNeighs) => (index, groupedNeighs.head._2)
@@ -208,7 +213,18 @@ println((totalOps/bfOps)+"#")
                            startRadius,
                            maxComparisonsPerItem,
                            measurer)
-                                                                                                                            
+                           
+  def computeGroupedGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, hasherKeyLength:Option[Int], hasherNumTables:Option[Int], startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider, grouper:GroupingProvider):(RDD[(Long, List[(Int,List[(Long, Double)])])],LookupProvider)
+            =computeGroupedGraph(data,
+                           numNeighbors,
+                           data.map({case (point, index) => point.features.size}).max(), //Get dimension from dataset
+                           hasherKeyLength,
+                           hasherNumTables,
+                           startRadius,
+                           maxComparisonsPerItem,
+                           measurer,
+                           grouper)
+                                                                                           
   protected def splitLargeBuckets(data:RDD[(LabeledPoint,Long)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], maxBucketSize:Int, radius:Double, hasher:Hasher):RDD[(Hash, Iterable[Long], Int)]
   
   protected def getGroupedGraphFromBuckets(data:RDD[(LabeledPoint,Long)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, (Int,List[(Int,List[(Long, Double)])]))]
