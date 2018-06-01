@@ -13,6 +13,42 @@ object LSHKNNGraphBuilder
   val DEFAULT_RADIUS_START=0.1
 }
 
+object GraphMerger extends Serializable
+{
+  def mergeNeighborLists(neighbors1:List[(Long, Double)], neighbors2:List[(Long, Double)], numNeighbors:Int):List[(Long, Double)]=
+      {
+        var sNeighbors1=neighbors1.sortBy(_._2)
+         var sNeighbors2=neighbors2.sortBy(_._2)
+         
+         var finalNeighbors:List[(Long, Double)]=Nil
+         
+         while(finalNeighbors.size<numNeighbors && (!sNeighbors1.isEmpty || !sNeighbors2.isEmpty))
+         {
+           if (sNeighbors2.isEmpty || (!sNeighbors1.isEmpty && sNeighbors1.head._2<sNeighbors2.head._2))
+           {
+             if ((finalNeighbors==Nil) || !finalNeighbors.contains(sNeighbors1.head))
+               finalNeighbors=sNeighbors1.head :: finalNeighbors
+             sNeighbors1=sNeighbors1.tail
+           }
+           else
+           {
+             if ((finalNeighbors==Nil) || !finalNeighbors.contains(sNeighbors2.head))
+               finalNeighbors=sNeighbors2.head :: finalNeighbors
+             sNeighbors2=sNeighbors2.tail
+           }
+         }
+         finalNeighbors
+      }
+  
+  def mergeGroupedNeighbors(groupedNeighbors1:List[(Int,List[(Long,Double)])], groupedNeighbors2:List[(Int,List[(Long,Double)])], numNeighbors:Int):List[(Int, List[(Long, Double)])]=
+  {
+    groupedNeighbors1.zip(groupedNeighbors2).map(
+        {
+          case ((grId1, l1), (grId2, l2)) => (grId1, mergeNeighborLists(l1, l2, numNeighbors))
+        })
+  }
+}
+
 abstract class LSHKNNGraphBuilder
 {
   protected final def computeGroupedGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasher:Hasher, startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider, grouper:GroupingProvider):(RDD[(Long, List[(Int,List[(Long, Double)])])],LookupProvider)=
@@ -164,8 +200,8 @@ totalOps=totalOps+neighbors.map({case x => x.size * x.size }).sum().toLong
 totalOps=totalOps+pairs.count()
       }
     }
-//println("Operations wrt bruteforce: "+(totalOps/bfOps))
-println((totalOps/bfOps)+"#")
+    println("Operations wrt bruteforce: "+(totalOps/bfOps))
+    //println((totalOps/bfOps)+"#")
     
     return (fullGraph.map({case (node, (viewed, neighs)) => (node,neighs)}),new BroadcastLookupProvider(data))
   }
@@ -280,21 +316,12 @@ println((totalOps/bfOps)+"#")
                                                                   })
   }
   
-  val mergeGroupedNeighbors= (groupedNeighbors1:List[(Int,List[(Long,Double)])], groupedNeighbors2:List[(Int,List[(Long,Double)])], numNeighbors:Int) =>
-  {
-    groupedNeighbors1.zip(groupedNeighbors2).map(
-        {
-          case ((grId1, l1), (grId2, l2)) => (grId1, mergeNeighborLists(l1, l2, numNeighbors))
-        })
-  }
-  
   private def mergeSubgraphs(g1:RDD[(Long, (Int, List[(Int,List[(Long, Double)])]))], g2:RDD[(Long, (Int, List[(Int,List[(Long, Double)])]))], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, (Int, List[(Int,List[(Long, Double)])]))]=
   {
     if (g1==null) return g2
     if (g2==null) return g1
-    val f=mergeGroupedNeighbors
     return g1.union(g2).reduceByKey({case ((viewed1,groupedNeighbors1), (viewed2,groupedNeighbors2)) =>
-                                                      (viewed1+viewed2,f(groupedNeighbors1, groupedNeighbors2, numNeighbors))
+                                                      (viewed1+viewed2,GraphMerger.mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
                                                     })
   }
   
@@ -340,31 +367,6 @@ println((totalOps/bfOps)+"#")
                                         grouper)
     return mergeSubgraphs(g, subgraph, numNeighbors, measurer)
   }
-  
-  val mergeNeighborLists = (neighbors1:List[(Long, Double)], neighbors2:List[(Long, Double)], numNeighbors:Int) =>
-      {
-        var sNeighbors1=neighbors1.sortBy(_._2)
-         var sNeighbors2=neighbors2.sortBy(_._2)
-         
-         var finalNeighbors:List[(Long, Double)]=Nil
-         
-         while(finalNeighbors.size<numNeighbors && (!sNeighbors1.isEmpty || !sNeighbors2.isEmpty))
-         {
-           if (sNeighbors2.isEmpty || (!sNeighbors1.isEmpty && sNeighbors1.head._2<sNeighbors2.head._2))
-           {
-             if ((finalNeighbors==Nil) || !finalNeighbors.contains(sNeighbors1.head))
-               finalNeighbors=sNeighbors1.head :: finalNeighbors
-             sNeighbors1=sNeighbors1.tail
-           }
-           else
-           {
-             if ((finalNeighbors==Nil) || !finalNeighbors.contains(sNeighbors2.head))
-               finalNeighbors=sNeighbors2.head :: finalNeighbors
-             sNeighbors2=sNeighbors2.tail
-           }
-         }
-         finalNeighbors
-      }
 }
 
 object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
@@ -403,7 +405,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
                            Nil
                          })
              //Merge neighbors found for the same element in different hash buckets
-             .reduceByKey({case ((viewed1,groupedNeighbors1), (viewed2,groupedNeighbors2)) => (viewed1+viewed2,mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
+             .reduceByKey({case ((viewed1,groupedNeighbors1), (viewed2,groupedNeighbors2)) => (viewed1+viewed2,GraphMerger.mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
                            })
     graph
   }
@@ -428,7 +430,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
                          })
              //Merge neighbors found for the same element in different hash buckets
              .reduceByKey({case ((viewed1,groupedNeighbors1), (viewed2,groupedNeighbors2)) =>
-                             (viewed1+viewed2,mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
+                             (viewed1+viewed2,GraphMerger.mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
                            })
                            
     graph
@@ -447,7 +449,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
                 })
              //Merge neighbors found for the same element in different hash buckets
              .reduceByKey({case ((v1,neighbors1), (v2,neighbors2)) =>
-                             (v1+v2,mergeNeighborLists(neighbors1, neighbors2, numNeighbors))
+                             (v1+v2,GraphMerger.mergeNeighborLists(neighbors1, neighbors2, numNeighbors))
                            })
              .map(
                  {
@@ -457,7 +459,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
              .reduceByKey(
                  {
                    case ((v1,groupedNeighbors1),(v2,groupedNeighbors2)) =>
-                     (v1+v2,mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
+                     (v1+v2,GraphMerger.mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
                  }
                  )
                  
@@ -474,7 +476,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
                 ((i1,grouper.getGroupId(p2)), (1,List((i2, measurer.getDistance(lookup.lookup(i1), p2)))))})
              //Merge neighbors found for the same element in different hash buckets
              .reduceByKey({case ((v1,neighbors1), (v2,neighbors2)) =>
-                             (v1+v2,mergeNeighborLists(neighbors1, neighbors2, numNeighbors))
+                             (v1+v2,GraphMerger.mergeNeighborLists(neighbors1, neighbors2, numNeighbors))
                            })
              .map(
                  {
@@ -484,7 +486,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
              .reduceByKey(
                  {
                    case ((v1,groupedNeighbors1),(v2,groupedNeighbors2)) =>
-                     (v1+v2,mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
+                     (v1+v2,GraphMerger.mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
                  }
                  )
                            
