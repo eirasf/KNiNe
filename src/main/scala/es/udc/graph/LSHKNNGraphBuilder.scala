@@ -206,10 +206,10 @@ totalOps=totalOps+pairs.count()
     return (fullGraph.map({case (node, (viewed, neighs)) => (node,neighs)}),new BroadcastLookupProvider(data))
   }
   
-  def computeGroupedGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasherKeyLength:Option[Int], hasherNumTables:Option[Int], startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider, grouper:GroupingProvider):(RDD[(Long, List[(Int,List[(Long, Double)])])],LookupProvider)
+  def computeGroupedGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasherKeyLength:Int, hasherNumTables:Int, startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider, grouper:GroupingProvider):(RDD[(Long, List[(Int,List[(Long, Double)])])],LookupProvider)
   ={
-    var hKLength:Int=if (hasherKeyLength==null) 0-1 else hasherKeyLength.get 
-    var hNTables:Int=if (hasherNumTables==null) 0-1 else hasherNumTables.get
+    var hKLength:Int=hasherKeyLength 
+    var hNTables:Int=hasherNumTables
     var mComparisons:Int=maxComparisonsPerItem
     
     if (hKLength<=0)
@@ -231,7 +231,7 @@ totalOps=totalOps+pairs.count()
                                 grouper)
   }
   
-  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasherKeyLength:Option[Int], hasherNumTables:Option[Int], startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider):(RDD[(Long, List[(Long, Double)])],LookupProvider)=
+  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, dimension:Int, hasherKeyLength:Int, hasherNumTables:Int, startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider):(RDD[(Long, List[(Long, Double)])],LookupProvider)=
   {
     val (graph,lookup)=computeGroupedGraph(data, numNeighbors, dimension, hasherKeyLength, hasherNumTables, startRadius, maxComparisonsPerItem, measurer, new DummyGroupingProvider())
     return (graph.map(
@@ -240,7 +240,7 @@ totalOps=totalOps+pairs.count()
         }),lookup)
   }
   
-  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, hasherKeyLength:Option[Int], hasherNumTables:Option[Int], startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider):(RDD[(Long, List[(Long, Double)])],LookupProvider)
+  def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, hasherKeyLength:Int, hasherNumTables:Int, startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider):(RDD[(Long, List[(Long, Double)])],LookupProvider)
             =computeGraph(data,
                            numNeighbors,
                            data.map({case (point, index) => point.features.size}).max(), //Get dimension from dataset
@@ -250,7 +250,7 @@ totalOps=totalOps+pairs.count()
                            maxComparisonsPerItem,
                            measurer)
                            
-  def computeGroupedGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, hasherKeyLength:Option[Int], hasherNumTables:Option[Int], startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider, grouper:GroupingProvider):(RDD[(Long, List[(Int,List[(Long, Double)])])],LookupProvider)
+  def computeGroupedGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, hasherKeyLength:Int, hasherNumTables:Int, startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider, grouper:GroupingProvider):(RDD[(Long, List[(Int,List[(Long, Double)])])],LookupProvider)
             =computeGroupedGraph(data,
                            numNeighbors,
                            data.map({case (point, index) => point.features.size}).max(), //Get dimension from dataset

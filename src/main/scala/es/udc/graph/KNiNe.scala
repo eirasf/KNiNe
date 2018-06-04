@@ -38,6 +38,39 @@ object sparkContextSingleton
   }  
 }
 
+object KNiNeConfiguration
+{
+  def getConfigurationFromOptions(options:Map[String, Any]):KNiNeConfiguration=
+  {
+    val radius0=if (options.exists(_._1=="radius_start"))
+                      options("radius_start").asInstanceOf[Double]
+                    else
+                      -1.0
+    val numTables=if (options.exists(_._1=="num_tables"))
+                      options("num_tables").asInstanceOf[Double].toInt
+                    else
+                      -1
+    val keyLength=if (options.exists(_._1=="key_length"))
+                      options("key_length").asInstanceOf[Double].toInt
+                    else
+                      -1
+    val maxComparisons:Int=if (options.exists(_._1=="max_comparisons"))
+                         options("max_comparisons").asInstanceOf[Double].toInt
+                       else
+                         -1
+    return new KNiNeConfiguration(numTables, keyLength, maxComparisons, radius0)
+  }
+}
+
+class KNiNeConfiguration(val numTables:Int, val keyLength:Int, val maxComparisons:Int, val radius0:Double)
+{
+  def this() = this(-1, -1, -1, LSHKNNGraphBuilder.DEFAULT_RADIUS_START)
+  override def toString():String=
+  {
+    return "R0="+this.radius0+";NT="+this.numTables+";KL="+this.keyLength+";MC="+this.maxComparisons
+  }
+}
+
 object KNiNe
 {
   val DEFAULT_METHOD="lsh"
@@ -121,7 +154,7 @@ Advanced LSH options:
   {
     if (args.length <= 0)
     {
-      println("An input libsvm file must be provided")
+      showUsageAndExit()
       return
     }
     
@@ -138,24 +171,13 @@ Advanced LSH options:
                  "libsvm"
                else
                  "text"
-                 
-    val radius0=options("radius_start").asInstanceOf[Double]
-    val numTables=if (options.exists(_._1=="num_tables"))
-                      Some(options("num_tables").asInstanceOf[Double].toInt)
-                    else
-                      None
-    val keyLength=if (options.exists(_._1=="key_length"))
-                      Some(options("key_length").asInstanceOf[Double].toInt)
-                    else
-                      None
+    
     val compareFile=if (options.exists(_._1=="compare"))
                       options("compare").asInstanceOf[String]
                     else
                       null
-    val maxComparisons:Int=if (options.exists(_._1=="max_comparisons"))
-                         options("max_comparisons").asInstanceOf[Double].toInt
-                       else
-                         -1
+                 
+    val kNiNeConf=KNiNeConfiguration.getConfigurationFromOptions(options)
                  
     //println("Using "+method+" to compute "+numNeighbors+"NN graph for dataset "+justFileName)
     //println("R0:"+radius0+(if (numTables!=null)" num_tables:"+numTables else "")+(if (keyLength!=null)" keyLength:"+keyLength else "")+(if (maxComparisons!=null)" maxComparisons:"+maxComparisons else ""))
@@ -206,7 +228,7 @@ Advanced LSH options:
 val timeStart=System.currentTimeMillis();    
     val (graph,lookup)=if (method=="lsh")
                                                 /* LOOKUP VERSION */
-                                                LSHLookupKNNGraphBuilder.computeGraph(data, numNeighbors, keyLength, numTables, radius0, maxComparisons, new EuclideanDistanceProvider())
+                                                LSHLookupKNNGraphBuilder.computeGraph(data, numNeighbors, kNiNeConf.keyLength, kNiNeConf.numTables, kNiNeConf.radius0, kNiNeConf.maxComparisons, new EuclideanDistanceProvider())
                                               else
                                                 /* BRUTEFORCE VERSION */
                                                 BruteForceKNNGraphBuilder.parallelComputeGraph(data, numNeighbors)
@@ -289,6 +311,8 @@ println("Added "+(System.currentTimeMillis()-timeStartR)+" milliseconds")
     //Stop the Spark Context
     sc.stop()
   }
+  
+  //def getDefaultConfiguration():
   
   def getFullResultFile(fileName:String):String=
   {
