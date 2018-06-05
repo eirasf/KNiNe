@@ -81,6 +81,12 @@ object BruteForceKNNGraphBuilder
     {
       for(j <- i+1 until arrayIndices.length)
       {
+         if (measurer==null)
+           println("NULL measurer")
+         if (lookup==null)
+           println("NULL lookup")
+         if (arrayIndices==null)
+           println("NULL arrayIndices")
          val d=measurer.getDistance(lookup.lookup(arrayIndices(i)),
                                      lookup.lookup(arrayIndices(j)))
          

@@ -141,7 +141,9 @@ var numBuckets:Long=2
         
         //TODO Check for duplicates
         //Simplify dataset
-        currentData=simplifyDataset(currentData, fullGraph, numNeighbors, maxComparisonsPerItem)
+        val newData=simplifyDataset(currentData, fullGraph, numNeighbors, maxComparisonsPerItem)
+        currentData.unpersist(false)
+        currentData=newData
         
         //TODO Possibly repartition
         currentData.cache()
@@ -378,9 +380,11 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
     if (lookup!=null)
       lookup.bData.destroy()
     lookup=new BroadcastLookupProvider(data)
+    
+    val l=lookup
     hashBuckets.flatMap({case (k, s, n) => s.map({ x => (k,x,n) })})
                    .flatMap({case(k, x, bucketSize) => if (bucketSize<maxBucketSize) Some((k,x))
-                                                       else hasher.getHashes(lookup.lookup(x).features, x, radius).map({case (nk,i) => (k.concat(nk),i)})}) //Concat new key
+                                                       else hasher.getHashes(l.lookup(x).features, x, radius).map({case (nk,i) => (k.concat(nk),i)})}) //Concat new key
                    .groupByKey()
                     .map({case (k, l) => (k, l.toSet)})
                     .flatMap({case (k, s) => if (s.size>1) Some((k, s, s.size)) else None})
@@ -392,6 +396,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
       lookup.bData.destroy()
     lookup=new BroadcastLookupProvider(data)
     
+    val l=lookup
     //Discard single element hashes and for the rest get every possible pairing to build graph
     val graph=hashBuckets.filter(_._2.size>1)
               //TODO Possibly repartition after filter
@@ -400,7 +405,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
                          //Remove duplicates from indices
                          val arrayIndices=indices.toSet.toArray
                          if (arrayIndices.length>1)
-                           BruteForceKNNGraphBuilder.computeGroupedGraph(arrayIndices, lookup, numNeighbors, measurer, grouper)
+                           BruteForceKNNGraphBuilder.computeGroupedGraph(arrayIndices, l, numNeighbors, measurer, grouper)
                          else
                            Nil
                          })
@@ -416,6 +421,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
       lookup.bData.destroy()
     lookup=new BroadcastLookupProvider(data)
     
+    val l=lookup
     //Discard single element hashes and for the rest get every possible pairing to build graph
     val graph=elementIndexLists.filter(_.size>1)
               //TODO Possibly repartition after filter
@@ -424,7 +430,7 @@ object LSHLookupKNNGraphBuilder extends LSHKNNGraphBuilder
                          //Remove duplicates from indices
                          val arrayIndices=indices.toSet.toArray
                          if (arrayIndices.length>1)
-                           BruteForceKNNGraphBuilder.computeGroupedGraph(arrayIndices, lookup, numNeighbors, measurer)
+                           BruteForceKNNGraphBuilder.computeGroupedGraph(arrayIndices, l, numNeighbors, measurer)
                          else
                            Nil
                          })
