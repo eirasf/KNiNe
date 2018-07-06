@@ -225,13 +225,17 @@ Advanced LSH options:
     graph.foreach(println(_))
     
     */
-val timeStart=System.currentTimeMillis();    
+val timeStart=System.currentTimeMillis();
+    var builder:LSHLookupKNNGraphBuilder=null
     val (graph,lookup)=if (method=="lsh")
-                                                /* LOOKUP VERSION */
-                                                LSHLookupKNNGraphBuilder.computeGraph(data, numNeighbors, kNiNeConf.keyLength, kNiNeConf.numTables, kNiNeConf.radius0, kNiNeConf.maxComparisons, new EuclideanDistanceProvider())
-                                              else
-                                                /* BRUTEFORCE VERSION */
-                                                BruteForceKNNGraphBuilder.parallelComputeGraph(data, numNeighbors)
+                        {
+                            /* LOOKUP VERSION */
+                            builder=new LSHLookupKNNGraphBuilder(data)
+                            (builder.computeGraph(data, numNeighbors, kNiNeConf.keyLength, kNiNeConf.numTables, kNiNeConf.radius0, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.lookup)
+                        }
+                        else
+                          /* BRUTEFORCE VERSION */
+                          BruteForceKNNGraphBuilder.parallelComputeGraph(data, numNeighbors)
     
     //Print graph
     /*println("There goes the graph:")
@@ -277,7 +281,7 @@ val timeStart=System.currentTimeMillis();
         {
           println("Refined "+i)
 val timeStartR=System.currentTimeMillis();          
-          refinedGraph=LSHLookupKNNGraphBuilder.refineGraph(data, refinedGraph, numNeighbors, new EuclideanDistanceProvider())
+          refinedGraph=builder.refineGraph(data, refinedGraph, numNeighbors, new EuclideanDistanceProvider())
           val fileNameR=fileName+"refined"+i
           val edgesR=refinedGraph.flatMap({case (index, (c,neighbors)) =>
                                                    neighbors.map({case (destination, distance) =>
