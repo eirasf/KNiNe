@@ -18,23 +18,28 @@ import org.apache.spark.mllib.linalg.Vectors
 import org.apache.log4j.{Level, Logger}
 
 import sys.process._
+import org.apache.spark.sql.SparkSession
 
 
 object sparkContextSingleton
 {
-  @transient private var instance: SparkContext = _
+  /*@transient private var instance: SparkContext = _
   private val conf : SparkConf = new SparkConf().setAppName("KNiNe")
-                                                //.setMaster("local[4]")
+                                                .setMaster("local[4]")
                                                 .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
                                                 .set("spark.broadcast.factory", "org.apache.spark.broadcast.HttpBroadcastFactory")
                                                 .set("spark.kryoserializer.buffer.max", "512")
                                                 .set("spark.driver.maxResultSize", "2048")
-
+	*/
   def getInstance(): SparkContext=
   {
-    if (instance == null)
+    val spark = SparkSession.builder.appName("Simple Application")
+                                    //.master("local[8]")
+                                    .getOrCreate()
+    /*if (instance == null)
       instance = SparkContext.getOrCreate(conf)//new SparkContext(conf)
-    instance
+    instance*/
+    spark.sparkContext
   }  
 }
 
