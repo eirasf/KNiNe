@@ -33,8 +33,8 @@ object sparkContextSingleton
 	*/
   def getInstance(): SparkContext=
   {
-    val spark = SparkSession.builder.appName("KNiNe")
-                                    .master("local[8]")
+    val spark = SparkSession.builder//.appName("KNiNe")
+                                    //.master("local[8]")
                                     .getOrCreate()
     /*if (instance == null)
       instance = SparkContext.getOrCreate(conf)//new SparkContext(conf)

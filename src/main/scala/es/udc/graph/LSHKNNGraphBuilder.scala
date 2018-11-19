@@ -51,7 +51,7 @@ object GraphMerger extends Serializable
 
 abstract class LSHKNNGraphBuilder
 {
-  protected final def computeGroupedGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, hasher:Hasher, startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, List[(Int,List[(Long, Double)])])]=
+  final def computeGroupedGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, hasher:Hasher, startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, List[(Int,List[(Long, Double)])])]=
   {
     var fullGraph:RDD[(Long, (Int,List[(Int,List[(Long, Double)])]))]=null //(node, (viewed, List[(groupingId,List[(neighbor,distance))]]))
     var currentData=data.map(_.swap)
@@ -235,6 +235,9 @@ totalOps=totalOps+pairs.count()
     
     return fullGraph.map({case (node, (viewed, neighs)) => (node,neighs)})
   }
+  
+  def computeGroupedGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, keyLength:Int, numTables:Int, startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, List[(Int,List[(Long, Double)])])]=
+    computeGroupedGraph(data, numNeighbors, new EuclideanLSHasher(data.map({case (point, index) => point.features.size}).max(), keyLength, numTables), startRadius, maxComparisonsPerItem, measurer, grouper)
   
   def computeGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, hasher:Hasher, startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider):RDD[(Long, List[(Long, Double)])]=
   {
