@@ -33,8 +33,8 @@ object sparkContextSingleton
 	*/
   def getInstance(): SparkContext=
   {
-    val spark = SparkSession.builder.appName("Simple Application")
-                                    //.master("local[8]")
+    val spark = SparkSession.builder.appName("KNiNe")
+                                    .master("local[8]")
                                     .getOrCreate()
     /*if (instance == null)
       instance = SparkContext.getOrCreate(conf)//new SparkContext(conf)
@@ -236,7 +236,13 @@ val timeStart=System.currentTimeMillis();
                         {
                             /* LOOKUP VERSION */
                             builder=new LSHLookupKNNGraphBuilder(data)
-                            (builder.computeGraph(data, numNeighbors, kNiNeConf.keyLength, kNiNeConf.numTables, kNiNeConf.radius0, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.lookup)
+                            if ((kNiNeConf.keyLength>0) && (kNiNeConf.numTables>0))
+                              (builder.computeGraph(data, numNeighbors, kNiNeConf.keyLength, kNiNeConf.numTables, kNiNeConf.radius0, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.lookup)
+                            else
+                            {
+                              val (hasher,nComps,suggestedRadius)=EuclideanLSHasher.getHasherForDataset(data, 1, kNiNeConf.radius0)
+                              (builder.computeGraph(data, numNeighbors, hasher, suggestedRadius, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.lookup)
+                            }
                         }
                         else
                           /* BRUTEFORCE VERSION */
