@@ -115,7 +115,7 @@ var numBuckets:Long=2
   totalOps=totalOps+stepOps.map({case x => x._2 * x._1 * (x._1 - 1) /2.0}).sum().toLong
   
         stepOps.sortBy(_._1)
-                       .foreach({case x => println(x._2+" buckets with "+x._1+" elements => "+(x._2 * x._1 * x._1/2.0)+" ops")})
+                       .foreach({case x => println(x._2+" buckets with "+x._1+" elements => "+(x._2 * x._1 * (x._1-1)/2.0)+" ops")})
 
         //println("Changed "+prevStepOps+"ops to "+postStepOps+"ops ("+(postStepOps/prevStepOps)+")")
         
@@ -230,7 +230,7 @@ totalOps=totalOps+neighbors.map({case x => x.size * x.size }).sum().toLong
 totalOps=totalOps+pairs.count()
       }
     }
-    println("Operations wrt bruteforce: "+(totalOps/bfOps))
+    println(s"Operations wrt bruteforce: ${totalOps/bfOps} "+f"($totalOps%d total ops / ${bfOps.toLong}%d)")
     //println((totalOps/bfOps)+"#")
     
     return fullGraph.map({case (node, (viewed, neighs)) => (node,neighs)})

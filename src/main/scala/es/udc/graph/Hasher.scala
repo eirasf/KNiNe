@@ -30,10 +30,12 @@ trait Hasher extends Serializable
 
 trait AutotunedHasher extends Hasher
 {
-  def getHasherForDataset(data: RDD[(LabeledPoint, Long)], dimension:Int, factor:Double, startRadius:Double):(EuclideanLSHasher,Int,Double)
+  val MIN_TOLERANCE=0.2
+  val MAX_TOLERANCE=0.9
+  def getHasherForDataset(data: RDD[(LabeledPoint, Long)], dimension:Int, maxComparisons:Int):(EuclideanLSHasher,Int,Double)
   
-  def getHasherForDataset(data: RDD[(LabeledPoint, Long)], factor:Double, startRadius:Double):(EuclideanLSHasher,Int,Double)=
-    getHasherForDataset(data, data.map({case (point, index) => point.features.size}).max(), factor, startRadius)
+  def getHasherForDataset(data: RDD[(LabeledPoint, Long)], minusLogOperations:Int):(EuclideanLSHasher,Int,Double)=
+    getHasherForDataset(data, data.map({case (point, index) => point.features.size}).max(), minusLogOperations)
 }
 
 object EuclideanLSHasher extends AutotunedHasher
@@ -48,89 +50,162 @@ object EuclideanLSHasher extends AutotunedHasher
     Math.log10(n) / Math.log10(2)
   }
 
-  private def computeBestKeyLength(data: RDD[(LabeledPoint, Long)], keyLength: Int, hasher: EuclideanLSHasher, startRadius: Double): (Int, Double) = {
-    val currentData = data.map(_.swap)
-    var tmpHasher = hasher
-    var radius = startRadius
-    var tmpHash = hashData(currentData, hasher, radius)
-    var update = false
-    var upFlag = false
-    var downFlag = false
+  private def computeBestKeyLength(data: RDD[(LabeledPoint, Long)], dimension:Int, maxComparisons:Int): (EuclideanLSHasher,Double) = {
+    val FRACTION=1.0//0.01
+    val INITIAL_RADIUS=1.0
+    val currentData = data.map(_.swap)//data.sample(false, FRACTION, 56804023).map(_.swap)
+    
+    val initialKLength: Int = Math.ceil(log2(data.count() / dimension)).toInt + 1
+    val minKLength=if (initialKLength>10) (initialKLength / 2).toInt else 5 
+    val maxKLength=if (initialKLength>10) (initialKLength * 1.5).toInt else 15
+    val hNTables: Int = Math.floor(Math.pow(log2(dimension), 2)).toInt
+    
+    println(s"Starting hyperparameter adjusting with:\n\tL:$initialKLength\n\tN:$hNTables\n\tR:$INITIAL_RADIUS")
+    
+    var (leftLimit,rightLimit)=(minKLength,maxKLength)
+    var radius = INITIAL_RADIUS
+    var isRadiusAdjusted = false
 
-    do {
-      update = false
-      if (tmpHasher.keyLength < hasher.keyLength) {
-        tmpHash = tmpHash.map({ case (hash, index) =>
-          (hash.cutLen(tmpHasher.keyLength), index)
-        });
-      } else if (tmpHasher.keyLength != hasher.keyLength) {
-        tmpHash = hashData(currentData, tmpHasher, radius)
+    while(true)
+    {
+      val currentLength=Math.floor((leftLimit+rightLimit)/2.0).toInt
+      val tmpHasher = new EuclideanLSHasher(dimension, currentLength, hNTables)
+      val (numBuckets,largestBucketSizeSample) = getBucketCount(currentData, tmpHasher, radius)
+      val largestBucketSize=largestBucketSizeSample///FRACTION
+      
+      if ((largestBucketSize>=maxComparisons*MIN_TOLERANCE) && (largestBucketSize<=maxComparisons*MAX_TOLERANCE))
+      {
+        println(s"Found suitable hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
+        return (tmpHasher,radius)
       }
-      /*
-            val hashBuckets = tmpHash.groupByKey()
-              .map({ case (k, l) => (k, l.toSet) })
-              .map({ case (k, s) => (k, s, s.size) })
-
-            val numBuckets = hashBuckets.count()
-            val stepOps = hashBuckets.map({ case (h, s, n) => (n, 1) }).reduceByKey(_ + _)
-      */
-      val stepOps = tmpHash.aggregateByKey(0)({ case (n, index) => n + 1 }, { case (n1, n2) => n1 + n2 })
-        .map({ case (h, n) => (n, 1) }).reduceByKey(_ + _).filter({ case (n1, x) => n1 != 1 })
-
-      val numBuckets = if (stepOps.isEmpty()) 0 else stepOps.reduce({ case ((n1, x), (n2, y)) => (n1 + n2, x + y) })._2
-      val maxGroup = if (stepOps.isEmpty()) (0, 0) else stepOps.reduce({ case ((n1, x), (n2, y)) => if (x > y) (n1, x) else (n2, y) })
-
-      //val mean = stepOps.map({ case (n1, x) => n1 * x }).reduce({ case (x1, x2) => x1 + x2 }) / numBuckets
-      //val desv = Math.sqrt(stepOps.map({ case (n, x) => (x - mean) * (x - mean) * n }).reduce({ case (d1, d2) => d1 + d2 }) / numBuckets)
-
-      if ((stepOps.isEmpty() || tmpHasher.keyLength < hasher.keyLength / 2) && !upFlag) {
-        radius *= 2
-        tmpHasher = new EuclideanLSHasher(tmpHasher.dim, hasher.keyLength, tmpHasher.numTables)
-        tmpHash = hashData(currentData, tmpHasher, radius)
-        update = true
-      } else {
-        //if (numBuckets * 0.5 < maxGroup._2)
-        val elems = stepOps.map({ case (n1, x) => n1 })
-        val mean = elems.reduce({ case (n1, n2) => n1 + n2 }) * 1.0 / elems.count()
-        val desv = Math.sqrt(elems.map({ case n => (n - mean) * (n - mean) }).reduce({ case (n1, n2) => n1 + n2 }) * 1.0 / elems.count())
-        val maxElems = stepOps.reduce({ case ((n1, x), (n2, y)) => if (n1 > n2) (n1, x) else (n2, y) })._1
-        if (numBuckets * 0.5 < maxGroup._2 && (maxElems < mean + 3 * desv || desv == 0)) {
-          tmpHasher = new EuclideanLSHasher(tmpHasher.dim, tmpHasher.keyLength - 2, tmpHasher.numTables)
-          downFlag = true
-          update = !upFlag
+      else
+      {
+        if (largestBucketSize<maxComparisons*MIN_TOLERANCE) //Buckets are too small
+        {
+          if ((numBuckets==0) || (rightLimit-1 == currentLength)) //If we ended up with no buckets with more than one element or the size is less than the desired minimum
+          {
+            if (isRadiusAdjusted)
+            {
+              println(s"Had to go with hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
+              return (tmpHasher,radius)
+            }
+            //We start over with a larger the radius
+            radius=getSuitableRadius(currentData, tmpHasher, radius, None, maxComparisons)
+            isRadiusAdjusted=true
+            leftLimit=minKLength
+            rightLimit=maxKLength
+          }
+          else
+            rightLimit=currentLength
         }
-        else if (!downFlag) {
-          tmpHasher = new EuclideanLSHasher(tmpHasher.dim, tmpHasher.keyLength + 2, tmpHasher.numTables)
-          update = true
-          upFlag = true
+        else //Buckets are too large
+        {
+          if (leftLimit == currentLength)
+          {
+            if (isRadiusAdjusted)
+            {
+              println(s"Had to go with hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
+              return (tmpHasher,radius)
+            }
+            //We start over with a smaller the radius
+            radius=getSuitableRadius(currentData, tmpHasher, 0.00001, Some(radius), maxComparisons)
+            isRadiusAdjusted=true
+            leftLimit=minKLength
+            rightLimit=maxKLength
+          }
+          else
+            leftLimit=currentLength
+        }
+        if (rightLimit<=leftLimit)
+        {
+          println(s"Had to go with hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
+          return (tmpHasher,radius)
         }
       }
-
-      stepOps.sortBy(_._1).repartition(1)
-        .foreach({ case x => println(x._2 + " buckets with " + x._1 + " elements") })
-
-      if (update) {
-        println("keyLength update to " + tmpHasher.keyLength + " with radius " + radius)
-      } else {
-        println("keyLength set to " + tmpHasher.keyLength + " with radius " + radius)
-      }
-
-
-    } while (update)
-    (tmpHasher.keyLength, radius)
+      
+      println(s"keyLength update to ${tmpHasher.keyLength} [$leftLimit - $rightLimit] with radius " + radius)
+    }
+    return (new EuclideanLSHasher(dimension, 1, hNTables), radius)//Dummy
   }
-  override def getHasherForDataset(data: RDD[(LabeledPoint, Long)], dimension:Int, factor:Double, startRadius:Double):(EuclideanLSHasher,Int,Double)=
+  
+  def getSuitableRadius(data:RDD[(Long,LabeledPoint)], hasher:EuclideanLSHasher, minValue:Double, maxValue:Option[Double], desiredCount:Int):Double=
   {
-    var radius = startRadius
-    var hKLength: Int = Math.ceil(log2(data.count() / dimension)).toInt + 1
-    val (hK, r) = computeBestKeyLength(data, hKLength, new EuclideanLSHasher(dimension, hKLength, 1), radius)
-      hKLength = hK
-      radius = r
-    var hNTables: Int = Math.floor(Math.pow(log2(dimension), 2) * factor).toInt
-    var mComparisons: Int = Math.abs(Math.ceil(hNTables * Math.sqrt(factor) * Math.sqrt(log2(data.count()/(dimension*0.1))))).toInt
+    var leftLimit=minValue
+    var rightLimit=if (maxValue.isDefined)
+                     maxValue.get
+                   else
+                   {
+                     //Find a radius that is too large
+                     var done=false
+                     var currentValue=leftLimit*2
+                     while (!done)
+                     {
+                       val (numBuckets, largestBucketSize)=getBucketCount(data, hasher, currentValue)
+                       done=largestBucketSize>desiredCount*2
+                       if (!done)
+                         currentValue*=2
+                       if ((largestBucketSize>MIN_TOLERANCE*desiredCount) && (largestBucketSize<MAX_TOLERANCE*desiredCount))
+                         return currentValue
+                     }
+                     currentValue
+                   }
+    while(true)
+    {
+      val radius=(leftLimit+rightLimit)/2
+      val (numBuckets, largestBucketSize)=getBucketCount(data, hasher, radius)
+      println(s"Radius update to $radius [$leftLimit - $rightLimit] got a largest bucket of $largestBucketSize")
+      if ((largestBucketSize>MIN_TOLERANCE*desiredCount) && (largestBucketSize<MAX_TOLERANCE*desiredCount))
+      {
+        println(s"Found suitable radius at $radius")
+        return radius
+      }
+      if ((numBuckets==0) || (largestBucketSize<MIN_TOLERANCE*desiredCount))
+        leftLimit=radius
+      else
+        if (largestBucketSize>MIN_TOLERANCE*desiredCount)
+          rightLimit=radius
+      if (rightLimit-leftLimit<0.01)
+      {
+        println(s"Had to select radius = $radius")
+        return radius
+      }
+    }
+    return 1.0//Dummy
+  }
+  
+  def getBucketCount(data:RDD[(Long,LabeledPoint)], hasher:EuclideanLSHasher, radius:Double):(Int,Int)=
+  {
+    val currentHashes = hashData(data, hasher, radius)
+    //bucketCountBySize is a list of (bucket_size, count) tuples that indicates how many buckets of a given size there are. Count must be >1.
+    val bucketCountBySize = currentHashes.aggregateByKey(0)({ case (n, index) => n + 1 }, { case (n1, n2) => n1 + n2 })
+                                         .map({ case (h, n) => (n, 1) })
+                                         .reduceByKey(_ + _)
+                                         .filter({ case (n1, x) => n1 != 1 })
 
-    println("R0:" + radius + " num_tables:" + hNTables + " keyLength:" + hKLength + " maxComparisons:" + mComparisons)
-    return (new EuclideanLSHasher(dimension, hKLength, hNTables), mComparisons, radius)
+    /*DEBUG*/
+    bucketCountBySize.sortBy(_._1)
+                      .repartition(1)
+                      .foreach({ case x => println(x._2 + " buckets with " + x._1 + " elements") })
+    /**/
+
+    
+    val numBuckets = if (bucketCountBySize.isEmpty()) 0 else bucketCountBySize.reduce({ case ((n1, x), (n2, y)) => (n1 + n2, x + y) })._2
+    val largestBucketSize = if (bucketCountBySize.isEmpty()) 0 else bucketCountBySize.map(_._1).max()
+    return (numBuckets, largestBucketSize)
+  }
+  
+  override def getHasherForDataset(data: RDD[(LabeledPoint, Long)], dimension:Int, maxComparisons:Int):(EuclideanLSHasher,Int,Double)=
+  {
+    //val factorLevel=Math.pow(10,-minusLogOperations)/0.001
+    //val predictedNTables: Int = Math.floor(Math.pow(log2(dimension), 2)).toInt
+    //var mComparisons: Int = Math.abs(Math.ceil(hasher.numTables * Math.sqrt(log2(data.count()/(dimension*0.1))))).toInt
+    //var mComparisons: Int = Math.abs(Math.ceil(predictedNTables * Math.sqrt(log2(data.count()/(dimension*0.1)*factorLevel)))).toInt
+    //println(s"CMAX set to $mComparisons do approximately ${Math.pow(10,-minusLogOperations)} of the calculations wrt brute force.")
+    val (hasher,radius) = computeBestKeyLength(data, dimension, (maxComparisons/1.5).toInt)
+
+    println("R0:" + radius + " num_tables:" + hasher.numTables + " keyLength:" + hasher.keyLength + " maxComparisons:" + maxComparisons)
+    //System.exit(0) //DEBUG
+    return (hasher, maxComparisons, radius)
   }
   
   override def getHashes(point:Vector, index:Long, radius:Double):List[(Hash, Long)]=

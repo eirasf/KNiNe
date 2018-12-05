@@ -240,7 +240,8 @@ val timeStart=System.currentTimeMillis();
                               (builder.computeGraph(data, numNeighbors, kNiNeConf.keyLength, kNiNeConf.numTables, kNiNeConf.radius0, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.lookup)
                             else
                             {
-                              val (hasher,nComps,suggestedRadius)=EuclideanLSHasher.getHasherForDataset(data, 1, kNiNeConf.radius0)
+                              val cMax=if (kNiNeConf.maxComparisons>0) kNiNeConf.maxComparisons else numNeighbors*20
+                              val (hasher,nComps,suggestedRadius)=EuclideanLSHasher.getHasherForDataset(data, cMax)
                               (builder.computeGraph(data, numNeighbors, hasher, suggestedRadius, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.lookup)
                             }
                         }
@@ -267,7 +268,7 @@ val timeStart=System.currentTimeMillis();
     var fileName=options("output").asInstanceOf[String]
     var fileNameOriginal=fileName
     var i=0
-    while (java.nio.file.Files.exists(java.nio.file.Paths.get(fileName)))
+    while (java.nio.file.Files.exists(java.nio.file.Paths.get(fileName.substring(7))))
     {
       i=i+1
       fileName=fileNameOriginal+"-"+i
@@ -281,9 +282,9 @@ val timeStart=System.currentTimeMillis();
     if (compareFile!=null)
     {
       //TEMP - Compare with ground truth
-      var result=getFullResultFile(fileName)
-      var firstComparison=CompareGraphs.compare(compareFile, result)
-      CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), result)
+      //var result=getFullResultFile(fileName)
+      var firstComparison=CompareGraphs.compare(compareFile, fileName)//result)
+      //CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), result)
       
       if (method=="lsh")
       {
@@ -306,9 +307,9 @@ println("Added "+(System.currentTimeMillis()-timeStartR)+" milliseconds")
               .saveAsTextFile(fileNameR)
               
           //TEMP - Compare with ground truth
-          result=getFullResultFile(fileNameR)
-          var secondComparison=CompareGraphs.compare(compareFile, result)
-          CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), result)
+          //result=getFullResultFile(fileNameR)
+          var secondComparison=CompareGraphs.compare(compareFile, fileNameR)//result)
+          //CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), result)
           
           /* //DEBUG - Show how the graph has improved
           firstComparison.join(secondComparison)
