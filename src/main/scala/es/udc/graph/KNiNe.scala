@@ -230,6 +230,12 @@ Advanced LSH options:
     graph.foreach(println(_))
     
     */
+    
+    
+    //EuclideanLSHasher.getBucketCount(data.map(_.swap), hasher, radius)
+    //System.exit(0)
+    
+    
 val timeStart=System.currentTimeMillis();
     var builder:LSHLookupKNNGraphBuilder=null
     val (graph,lookup)=if (method=="lsh")
@@ -240,8 +246,8 @@ val timeStart=System.currentTimeMillis();
                               (builder.computeGraph(data, numNeighbors, kNiNeConf.keyLength, kNiNeConf.numTables, kNiNeConf.radius0, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.lookup)
                             else
                             {
-                              val cMax=if (kNiNeConf.maxComparisons>0) kNiNeConf.maxComparisons else numNeighbors*20
-                              val (hasher,nComps,suggestedRadius)=EuclideanLSHasher.getHasherForDataset(data, cMax)
+                              val cMax=if (kNiNeConf.maxComparisons>0) kNiNeConf.maxComparisons else 250
+                              val (hasher,nComps,suggestedRadius)=EuclideanLSHasher.getHasherForDataset(data, (cMax*0.8).toInt) //Make constant size buckets
                               (builder.computeGraph(data, numNeighbors, hasher, suggestedRadius, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.lookup)
                             }
                         }
@@ -284,7 +290,7 @@ val timeStart=System.currentTimeMillis();
       //TEMP - Compare with ground truth
       //var result=getFullResultFile(fileName)
       var firstComparison=CompareGraphs.compare(compareFile, fileName)//result)
-      //CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), result)
+      CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
       
       if (method=="lsh")
       {
@@ -309,7 +315,7 @@ println("Added "+(System.currentTimeMillis()-timeStartR)+" milliseconds")
           //TEMP - Compare with ground truth
           //result=getFullResultFile(fileNameR)
           var secondComparison=CompareGraphs.compare(compareFile, fileNameR)//result)
-          //CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), result)
+          CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
           
           /* //DEBUG - Show how the graph has improved
           firstComparison.join(secondComparison)

@@ -112,10 +112,14 @@ var numBuckets:Long=2
                        .reduceByKey(_+_)
         //val postStepOps=stepOps.map({case x => x._2 * x._1 * x._1 /2.0}).sum()
   
-  totalOps=totalOps+stepOps.map({case x => x._2 * x._1 * (x._1 - 1) /2.0}).sum().toLong
+        val numStepOps=stepOps.map({case x => x._2 * x._1 * (x._1 - 1) /2.0}).sum().toLong
+        val largestBucketSize=stepOps.map(_._1).max
+  totalOps=totalOps+numStepOps
   
+        println(f"Performing $numStepOps%g ops (largest bucket has $largestBucketSize%d elements)")
+        /*DEBUG
         stepOps.sortBy(_._1)
-                       .foreach({case x => println(x._2+" buckets with "+x._1+" elements => "+(x._2 * x._1 * (x._1-1)/2.0)+" ops")})
+                       .foreach({case x => println(x._2+" buckets with "+x._1+" elements => "+(x._2 * x._1 * (x._1-1)/2.0)+" ops")})*/
 
         //println("Changed "+prevStepOps+"ops to "+postStepOps+"ops ("+(postStepOps/prevStepOps)+")")
         

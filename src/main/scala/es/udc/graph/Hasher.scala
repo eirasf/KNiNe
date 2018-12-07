@@ -32,7 +32,7 @@ trait AutotunedHasher extends Hasher
 {
   val MIN_TOLERANCE=0.2
   val MAX_TOLERANCE=0.9
-  def getHasherForDataset(data: RDD[(LabeledPoint, Long)], dimension:Int, maxComparisons:Int):(EuclideanLSHasher,Int,Double)
+  def getHasherForDataset(data: RDD[(LabeledPoint, Long)], dimension:Int, desiredComparisons:Int):(EuclideanLSHasher,Int,Double)
   
   def getHasherForDataset(data: RDD[(LabeledPoint, Long)], minusLogOperations:Int):(EuclideanLSHasher,Int,Double)=
     getHasherForDataset(data, data.map({case (point, index) => point.features.size}).max(), minusLogOperations)
@@ -50,15 +50,17 @@ object EuclideanLSHasher extends AutotunedHasher
     Math.log10(n) / Math.log10(2)
   }
 
-  private def computeBestKeyLength(data: RDD[(LabeledPoint, Long)], dimension:Int, maxComparisons:Int): (EuclideanLSHasher,Double) = {
+  private def computeBestKeyLength(data: RDD[(LabeledPoint, Long)], dimension:Int, desiredComparisons:Int): (EuclideanLSHasher,Double) = {
     val FRACTION=1.0//0.01
     val INITIAL_RADIUS=1.0
-    val currentData = data.map(_.swap)//data.sample(false, FRACTION, 56804023).map(_.swap)
+    val initialData = data.map(_.swap)//data.sample(false, FRACTION, 56804023).map(_.swap)
     
     val initialKLength: Int = Math.ceil(log2(data.count() / dimension)).toInt + 1
-    val minKLength=if (initialKLength>10) (initialKLength / 2).toInt else 5 
-    val maxKLength=if (initialKLength>10) (initialKLength * 1.5).toInt else 15
+    val minKLength=if (initialKLength>15) (initialKLength / 2).toInt else 7 
+    val maxKLength=if (initialKLength>15) (initialKLength * 1.5).toInt else 22
     val hNTables: Int = Math.floor(Math.pow(log2(dimension), 2)).toInt
+    
+    val currentData=initialData//.sample(false, 0.2, 34652912) //20% of the data usually does the job.
     
     println(s"Starting hyperparameter adjusting with:\n\tL:$initialKLength\n\tN:$hNTables\n\tR:$INITIAL_RADIUS")
     
@@ -73,14 +75,14 @@ object EuclideanLSHasher extends AutotunedHasher
       val (numBuckets,largestBucketSizeSample) = getBucketCount(currentData, tmpHasher, radius)
       val largestBucketSize=largestBucketSizeSample///FRACTION
       
-      if ((largestBucketSize>=maxComparisons*MIN_TOLERANCE) && (largestBucketSize<=maxComparisons*MAX_TOLERANCE))
+      if ((largestBucketSize>=desiredComparisons*MIN_TOLERANCE) && (largestBucketSize<=desiredComparisons*MAX_TOLERANCE))
       {
         println(s"Found suitable hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
         return (tmpHasher,radius)
       }
       else
       {
-        if (largestBucketSize<maxComparisons*MIN_TOLERANCE) //Buckets are too small
+        if (largestBucketSize<desiredComparisons*MIN_TOLERANCE) //Buckets are too small
         {
           if ((numBuckets==0) || (rightLimit-1 == currentLength)) //If we ended up with no buckets with more than one element or the size is less than the desired minimum
           {
@@ -90,7 +92,7 @@ object EuclideanLSHasher extends AutotunedHasher
               return (tmpHasher,radius)
             }
             //We start over with a larger the radius
-            radius=getSuitableRadius(currentData, tmpHasher, radius, None, maxComparisons)
+            radius=getSuitableRadius(currentData, tmpHasher, radius, None, desiredComparisons)
             isRadiusAdjusted=true
             leftLimit=minKLength
             rightLimit=maxKLength
@@ -108,7 +110,7 @@ object EuclideanLSHasher extends AutotunedHasher
               return (tmpHasher,radius)
             }
             //We start over with a smaller the radius
-            radius=getSuitableRadius(currentData, tmpHasher, 0.00001, Some(radius), maxComparisons)
+            radius=getSuitableRadius(currentData, tmpHasher, 0.00001, Some(radius), desiredComparisons)
             isRadiusAdjusted=true
             leftLimit=minKLength
             rightLimit=maxKLength
@@ -123,7 +125,7 @@ object EuclideanLSHasher extends AutotunedHasher
         }
       }
       
-      println(s"keyLength update to ${tmpHasher.keyLength} [$leftLimit - $rightLimit] with radius " + radius)
+      println(s"keyLength update to ${tmpHasher.keyLength} [$leftLimit - $rightLimit] with radius $radius because largestBucket was $largestBucketSize and wanted [${desiredComparisons*MIN_TOLERANCE} - ${desiredComparisons*MAX_TOLERANCE}]")
     }
     return (new EuclideanLSHasher(dimension, 1, hNTables), radius)//Dummy
   }
@@ -182,11 +184,11 @@ object EuclideanLSHasher extends AutotunedHasher
                                          .reduceByKey(_ + _)
                                          .filter({ case (n1, x) => n1 != 1 })
 
-    /*DEBUG*/
+    /*DEBUG
     bucketCountBySize.sortBy(_._1)
                       .repartition(1)
                       .foreach({ case x => println(x._2 + " buckets with " + x._1 + " elements") })
-    /**/
+    */
 
     
     val numBuckets = if (bucketCountBySize.isEmpty()) 0 else bucketCountBySize.reduce({ case ((n1, x), (n2, y)) => (n1 + n2, x + y) })._2
@@ -194,18 +196,18 @@ object EuclideanLSHasher extends AutotunedHasher
     return (numBuckets, largestBucketSize)
   }
   
-  override def getHasherForDataset(data: RDD[(LabeledPoint, Long)], dimension:Int, maxComparisons:Int):(EuclideanLSHasher,Int,Double)=
+  override def getHasherForDataset(data: RDD[(LabeledPoint, Long)], dimension:Int, desiredComparisons:Int):(EuclideanLSHasher,Int,Double)=
   {
     //val factorLevel=Math.pow(10,-minusLogOperations)/0.001
     //val predictedNTables: Int = Math.floor(Math.pow(log2(dimension), 2)).toInt
     //var mComparisons: Int = Math.abs(Math.ceil(hasher.numTables * Math.sqrt(log2(data.count()/(dimension*0.1))))).toInt
     //var mComparisons: Int = Math.abs(Math.ceil(predictedNTables * Math.sqrt(log2(data.count()/(dimension*0.1)*factorLevel)))).toInt
     //println(s"CMAX set to $mComparisons do approximately ${Math.pow(10,-minusLogOperations)} of the calculations wrt brute force.")
-    val (hasher,radius) = computeBestKeyLength(data, dimension, (maxComparisons/1.5).toInt)
+    val (hasher,radius) = computeBestKeyLength(data, dimension, (desiredComparisons/1.5).toInt)
 
-    println("R0:" + radius + " num_tables:" + hasher.numTables + " keyLength:" + hasher.keyLength + " maxComparisons:" + maxComparisons)
+    println("R0:" + radius + " num_tables:" + hasher.numTables + " keyLength:" + hasher.keyLength + " desiredComparisons:" + desiredComparisons)
     //System.exit(0) //DEBUG
-    return (hasher, maxComparisons, radius)
+    return (hasher, desiredComparisons, radius)
   }
   
   override def getHashes(point:Vector, index:Long, radius:Double):List[(Hash, Long)]=
