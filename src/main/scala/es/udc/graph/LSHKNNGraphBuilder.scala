@@ -64,7 +64,8 @@ var numBuckets:Long=2
     
     //while(!currentData.isEmpty())
     //while(nodesLeft>numNeighbors)
-    while((numBuckets>1 || nodesLeft>numNeighbors) && nodesLeft>1)
+    //while((numBuckets>1 || nodesLeft>numNeighbors) && nodesLeft>1)
+    while(nodesLeft>numNeighbors && nodesLeft>1)
     {
       //Maps each element to numTables (hash, index) pairs with hashes of keyLenght length.
       val hashRDD=currentData.flatMap({case (index, point) =>
