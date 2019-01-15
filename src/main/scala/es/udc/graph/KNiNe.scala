@@ -91,6 +91,7 @@ Options:
     -r    Starting radius (default: """+LSHKNNGraphBuilder.DEFAULT_RADIUS_START+""")
     -t    Maximum comparisons per item (default: auto)
     -c    File containing the graph to compare to (default: nothing)
+    -f    Fast computation. Tune parameters for fast and approximate computation (default: no)
 
 Advanced LSH options:
     -n    Number of hashes per item (default: auto)
@@ -126,6 +127,7 @@ Advanced LSH options:
           case "l"   => "key_length"
           case "t"   => "max_comparisons"
           case "c"   => "compare"
+          case "f"   => "fast"
           case somethingElse => readOptionName
         }
       if (!m.keySet.exists(_==option) && option==readOptionName)
@@ -148,10 +150,16 @@ Advanced LSH options:
         if (option=="compare")
           m(option)=p(i+1)
         else
-          m(option)=p(i+1).toDouble
+          if (option=="fast")
+            m(option)=true
+          else
+            m(option)=p(i+1).toDouble
       }
-        
-      i=i+2
+      
+      if (option=="fast")
+        i=i+1
+      else
+        i=i+2
     }
     return m.toMap
   }
@@ -247,7 +255,8 @@ val timeStart=System.currentTimeMillis();
                             else
                             {
                               val cMax=if (kNiNeConf.maxComparisons>0) kNiNeConf.maxComparisons else 250
-                              val (hasher,nComps,suggestedRadius)=EuclideanLSHasher.getHasherForDataset(data, (cMax*0.8).toInt) //Make constant size buckets
+                              val factor=if (options.contains("fast")) 4.0 else 0.8
+                              val (hasher,nComps,suggestedRadius)=EuclideanLSHasher.getHasherForDataset(data, (cMax*factor).toInt) //Make constant size buckets
                               (builder.computeGraph(data, numNeighbors, hasher, suggestedRadius, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.lookup)
                             }
                         }
@@ -288,7 +297,6 @@ val timeStart=System.currentTimeMillis();
     if (compareFile!=null)
     {
       //TEMP - Compare with ground truth
-      //var result=getFullResultFile(fileName)
       var firstComparison=CompareGraphs.compare(compareFile, fileName)//result)
       CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
       
@@ -313,7 +321,6 @@ println("Added "+(System.currentTimeMillis()-timeStartR)+" milliseconds")
               .saveAsTextFile(fileNameR)
               
           //TEMP - Compare with ground truth
-          //result=getFullResultFile(fileNameR)
           var secondComparison=CompareGraphs.compare(compareFile, fileNameR)//result)
           CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
           
@@ -332,14 +339,5 @@ println("Added "+(System.currentTimeMillis()-timeStartR)+" milliseconds")
     /**/
     //Stop the Spark Context
     sc.stop()
-  }
-  
-  //def getDefaultConfiguration():
-  
-  def getFullResultFile(fileName:String):String=
-  {
-    //println("Executing /home/eirasf/Escritorio/kNNTEMP/joinParts.sh "+fileName)
-    ("/home/eirasf/Escritorio/datasets-kNN/scripts/joinParts.sh "+fileName).!
-    return fileName+"/result"
   }
 }
