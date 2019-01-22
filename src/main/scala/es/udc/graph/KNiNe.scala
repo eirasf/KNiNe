@@ -255,7 +255,7 @@ val timeStart=System.currentTimeMillis();
                             else
                             {
                               //val cMax=if (kNiNeConf.maxComparisons>0) kNiNeConf.maxComparisons else 250
-                              val cMax=if (kNiNeConf.maxComparisons>0) kNiNeConf.maxComparisons else 4*numNeighbors
+                              val cMax=if (kNiNeConf.maxComparisons>0) math.max(kNiNeConf.maxComparisons,numNeighbors) else math.min(10*numNeighbors,math.max(250,1.1*numNeighbors))
                               val factor=if (options.contains("fast")) 4.0 else 0.8
                               val (hasher,nComps,suggestedRadius)=EuclideanLSHasher.getHasherForDataset(data, (cMax*factor).toInt) //Make constant size buckets
                               (builder.computeGraph(data, numNeighbors, hasher, suggestedRadius, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.lookup)
@@ -298,7 +298,7 @@ val timeStart=System.currentTimeMillis();
     if (compareFile!=null)
     {
       //TEMP - Compare with ground truth
-      var firstComparison=CompareGraphs.compare(compareFile, fileName)//result)
+      CompareGraphs.printResults(CompareGraphs.compare(compareFile, fileName, None))
       CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
       
       if (method=="lsh")
@@ -322,7 +322,7 @@ println("Added "+(System.currentTimeMillis()-timeStartR)+" milliseconds")
               .saveAsTextFile(fileNameR)
               
           //TEMP - Compare with ground truth
-          var secondComparison=CompareGraphs.compare(compareFile, fileNameR)//result)
+          CompareGraphs.printResults(CompareGraphs.compare(compareFile, fileNameR, None))
           CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
           
           /* //DEBUG - Show how the graph has improved

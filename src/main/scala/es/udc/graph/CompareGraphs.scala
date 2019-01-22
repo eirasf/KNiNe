@@ -19,7 +19,7 @@ import org.apache.log4j.{Level, Logger}
 
 object CompareGraphs
 {
-    def compare(fileExact:String, file:String):RDD[(Long,(Double, Set[(Long,Double)],Double, Set[(Long,Double)]))]=
+    def compare(fileExact:String, file:String, dataset:Option[String]):(Double,Option[Double],Option[Double])=
     {
       val sc=sparkContextSingleton.getInstance()
       //Load data from files
@@ -27,28 +27,68 @@ object CompareGraphs
       val dataExact: RDD[(Long, (Long,Double))] = rawDataExact.map({ line => val values=line.substring(1, line.length()-1).split(",")
                                                                             (values(0).toLong, (values(1).toLong, values(2).toDouble))
                                                           })
-                                                          .filter(_._1<10) //Short
-      val rawData=sc.textFile(file)
-      val data: RDD[(Long, Iterable[(Long,Double)])] = rawData.map({ line => val values=line.substring(1, line.length()-1).split(",")
-                                                          (values(0).toLong, (values(1).toLong, values(2).toDouble))
+                                                          //.filter(_._1<10) //DEBUG - Short
+      var rawData=sc.textFile(file).map({ line => val values=line.substring(1, line.length()-1).split(",")
+                                                          (values(0).toLong, values(1).toLong, values(2).toDouble)
                                                 })
-                                                .filter(_._1<10) //Short
-                                                .groupByKey()
+      var hasDistances=rawData.map(_._3).distinct().count()>1
+      if (!hasDistances && dataset.isDefined)
+      {
+        hasDistances=true
+        //Load data from file
+        val datasetRDD: RDD[(LabeledPoint, Long)] = MLUtils.loadLibSVMFile(sc, dataset.get).zipWithIndex()
+        val lookup:BroadcastLookupProvider=new BroadcastLookupProvider(datasetRDD)
+        val measurer=new EuclideanDistanceProvider()
+        rawData=rawData.flatMap({case (index1, index2, nothing) =>
+                              if ((index1>=0) && (index2>=0))
+                                Some((index1,index2,measurer.getDistance(lookup.lookup(index1), lookup.lookup(index2))))
+                              else
+                                None
+                            })
+      }
+      
+      val data: RDD[(Long, Iterable[(Long,Double)])] = rawData.map({case (e1,e2,d) => (e1,(e2,d))}).groupByKey()
       
       val totalEdges=dataExact.count()
       
 //println("The graph has "+totalEdges+" edges")
       
-      val commonEdges=dataExact.groupByKey().join(data)
+      val recall=dataExact.groupByKey().join(data)
                                             .map({case (element, (neighborsExact, neighbors)) => val intersect=neighbors.map(_._1).toSet.intersect(neighborsExact.map(_._1).toSet)
                                                                                                  var result=intersect.size
                                                                                                  //if (result<neighbors.size)
                                                                                                  //    result=neighbors.map(_._2).toSet.intersect(neighborsExact.map(_._2).toSet).size
-                                                                                                 result})
+                                                                                                 result.toFloat/neighborsExact.size})
                                                                                                  
                                             
                                             .mean()
-                                            
+      
+      val recallDistanceBased:Option[Double]=if (!hasDistances) None
+          else
+          {
+            val r=dataExact.groupByKey().join(data)
+                                            .map({case (element, (neighborsExact, neighbors)) =>
+                                                    val maxD=neighborsExact.map(_._2).max
+                                                    neighbors.filter(_._2<=maxD).size.toFloat/neighborsExact.size
+                                                    //neighbors.filter(_._2-maxD<0.00001).size.toFloat/neighborsExact.size
+                                            })
+                                            .mean()
+            Some(r)
+          }
+      val distanceError:Option[Double]=if (!hasDistances) None
+          else
+          {
+            val r=dataExact.groupByKey().join(data)
+                                            .map({case (element, (neighborsExact, neighbors)) =>
+                                                    val sumDExact=neighborsExact.map(_._2).sum
+                                                    val sumD=neighborsExact.size*neighbors.map(_._2).sum/neighbors.size
+                                                    (sumD-sumDExact)/neighborsExact.size
+                                            })
+                                            .mean()
+            Some(r)
+          }
+      return (recall,recallDistanceBased,distanceError)
+      /*                                      
       var r=dataExact.groupByKey().join(data)
                             .flatMap({case (element, (neighborsExact, neighbors)) => val intersect=neighbors.map(_._1).toSet.intersect(neighborsExact.map(_._1).toSet)
                                                                                  var result=intersect.size
@@ -60,13 +100,10 @@ object CompareGraphs
                                                                                  }
                                                                                  else
                                                                                      None})
-     /*r.filter(_._1<100)
-                            .sortBy(_._1)
-                            .foreach(println(_))*/
                                
 //println("The aprox. graph has "+commonEdges+" edges in common ("+(commonEdges.toDouble/totalEdges.toDouble)+")")
 println(commonEdges.toDouble/data.first()._2.size)
-      return r
+      return r*/
     }
     
     def comparePositions(fileExact:String, file:String)=
@@ -77,12 +114,12 @@ println(commonEdges.toDouble/data.first()._2.size)
       val dataExact: RDD[(Long, (Long,Double))] = rawDataExact.map({ line => val values=line.substring(1, line.length()-1).split(",")
                                                                             (values(0).toLong, (values(1).toLong, values(2).toDouble))
                                                           })
-                                                          //.filter(_._1<10) //Short
+                                                          //DEBUG - .filter(_._1<10) //Short
       val rawData=sc.textFile(file)
       val data: RDD[(Long, Iterable[(Long,Double)])] = rawData.map({ line => val values=line.substring(1, line.length()-1).split(",")
                                                           (values(0).toLong, (values(1).toLong, values(2).toDouble))
                                                 })
-                                                //.filter(_._1<10) //Short
+                                                //DEBUG - .filter(_._1<10) //Short
                                                 .groupByKey()
       
 //println("The graph has "+totalEdges+" edges")
@@ -121,16 +158,27 @@ println(commonEdges.toDouble/data.first()._2.size)
 println(commonEdges.toDouble)
     }
     
+    def printResults(results:(Double,Option[Double],Option[Double]))=
+    {
+      val (recall,recallDistanceBased,distanceError)=results
+      println("Recall: "+recall)
+      println("Recall (distance-based): "+(if (recallDistanceBased.isDefined) recallDistanceBased.get else "-"))
+      println("Distance error: "+(if (distanceError.isDefined) distanceError.get else "-"))
+    }
+    
     def main(args: Array[String])
     {
       if (args.length <= 1)
       {
-        println("Two input files must be provided")
+        println("""Usage: CompareGraphs approxGraph exactGraph [dataset]
+        Graphs must be text files with a (elem1,elem2,dist) per tuple
+        If dist is 0 for all tuples and dataset (in libsvm format) is provided, distances will be recalculated.""")
         return
       }
       
-      var fileExact=args(0)
-      val file=args(1)
+      val file=args(0)
+      val fileExact=args(1)
+      val dataset:Option[String]=if (args.length<3) None else Some(args(2))
       
       //Set up Spark Context
       val sc=sparkContextSingleton.getInstance()
@@ -139,18 +187,8 @@ println(commonEdges.toDouble)
       val rootLogger = Logger.getRootLogger()
       rootLogger.setLevel(Level.WARN)
       
-      compare(fileExact, file)
-      /*if (fileExact.contains("64") || fileExact.contains("32") || fileExact.contains("16") || fileExact.contains("4"))
-        fileExact=fileExact.replace("64", "128").replace("32", "128").replace("16", "128").replace("4", "128")
-      else
-      {
-        if (fileExact.contains("8"))
-          fileExact=fileExact.replace("8", "128")
-        else
-          fileExact=fileExact.replace("2", "128")
-      }
-      comparePositions(fileExact, file)
-      */
+      printResults(compare(fileExact, file, dataset))
+      
       //Stop the Spark Context
       sc.stop()
     }
