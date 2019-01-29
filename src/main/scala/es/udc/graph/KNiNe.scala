@@ -253,7 +253,8 @@ val timeStart=System.currentTimeMillis();
                             {
                               //val cMax=if (kNiNeConf.maxComparisons>0) kNiNeConf.maxComparisons else 250
                               val cMax=if (kNiNeConf.maxComparisons>0) math.max(kNiNeConf.maxComparisons,numNeighbors) else math.min(10*numNeighbors,math.max(250,1.1*numNeighbors))
-                              val factor=if (options.contains("fast")) 4.0 else 0.8
+                              //val factor=if (options.contains("fast")) 4.0 else 0.8
+                              val factor=4.0
                               val (hasher,nComps,suggestedRadius)=EuclideanLSHasher.getHasherForDataset(data, (cMax*factor).toInt) //Make constant size buckets
                               (builder.computeGraph(data, numNeighbors, hasher, suggestedRadius, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.lookup)
                             }
