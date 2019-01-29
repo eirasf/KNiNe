@@ -114,7 +114,7 @@ Advanced LSH options:
     var i=2
     while (i < p.length)
     {
-      if ((i>=p.length-2) || (p(i).charAt(0)!='-'))
+      if ((i>=p.length-1) || (p(i).charAt(0)!='-'))
       {
         println("Unknown option: "+p(i))
         showUsageAndExit()
