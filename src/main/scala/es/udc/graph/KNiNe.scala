@@ -92,7 +92,7 @@ Options:
     -r    Starting radius (default: """+LSHKNNGraphBuilder.DEFAULT_RADIUS_START+""")
     -t    Maximum comparisons per item (default: auto)
     -c    File containing the graph to compare to (default: nothing)
-    -p    Number of partitions for the computations (default: """+KNiNe.DEFAULT_NUM_PARTITIONS+""")
+    -p    Number of partitions for the data RDDs (default: """+KNiNe.DEFAULT_NUM_PARTITIONS+""")
 
 Advanced LSH options:
     -n    Number of hashes per item (default: auto)
