@@ -26,10 +26,10 @@ object sparkContextSingleton
   @transient private var instance: SparkContext = _
   private val conf : SparkConf = new SparkConf()//.setAppName("KNiNe")
                                                 //.setMaster("local[4]")
-                                                .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-                                                .set("spark.broadcast.factory", "org.apache.spark.broadcast.HttpBroadcastFactory")
-                                                .set("spark.kryoserializer.buffer.max", "512")
-                                                .set("spark.driver.maxResultSize", "2048")
+                                                //.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+                                                //.set("spark.broadcast.factory", "org.apache.spark.broadcast.HttpBroadcastFactory")
+                                                //.set("spark.kryoserializer.buffer.max", "512")
+                                                //.set("spark.driver.maxResultSize", "2048")
 	
   def getInstance(): SparkContext=
   {
@@ -80,6 +80,7 @@ object KNiNe
 {
   val DEFAULT_METHOD="lsh"
   val DEFAULT_K=10
+  val DEFAULT_NUM_PARTITIONS=512
   
   def showUsageAndExit()=
   {
@@ -91,7 +92,7 @@ Options:
     -r    Starting radius (default: """+LSHKNNGraphBuilder.DEFAULT_RADIUS_START+""")
     -t    Maximum comparisons per item (default: auto)
     -c    File containing the graph to compare to (default: nothing)
-    -f    Fast computation. Tune parameters for fast and approximate computation (default: no)
+    -p    Number of partitions for the computations (default: """+KNiNe.DEFAULT_NUM_PARTITIONS+""")
 
 Advanced LSH options:
     -n    Number of hashes per item (default: auto)
@@ -102,7 +103,8 @@ Advanced LSH options:
   {
     val m=scala.collection.mutable.Map[String, Any]("num_neighbors" -> KNiNe.DEFAULT_K.toDouble,
                                                     "method" -> KNiNe.DEFAULT_METHOD,
-                                                    "radius_start" -> LSHKNNGraphBuilder.DEFAULT_RADIUS_START)
+                                                    "radius_start" -> LSHKNNGraphBuilder.DEFAULT_RADIUS_START,
+                                                    "num_partitions" -> KNiNe.DEFAULT_NUM_PARTITIONS)
     if (p.length<=1)
       showUsageAndExit()
     
@@ -112,7 +114,7 @@ Advanced LSH options:
     var i=2
     while (i < p.length)
     {
-      if ((i>=p.length-1) || (p(i).charAt(0)!='-'))
+      if ((i>=p.length-2) || (p(i).charAt(0)!='-'))
       {
         println("Unknown option: "+p(i))
         showUsageAndExit()
@@ -127,7 +129,7 @@ Advanced LSH options:
           case "l"   => "key_length"
           case "t"   => "max_comparisons"
           case "c"   => "compare"
-          case "f"   => "fast"
+          case "p"   => "num_partitions"
           case somethingElse => readOptionName
         }
       if (!m.keySet.exists(_==option) && option==readOptionName)
@@ -150,16 +152,10 @@ Advanced LSH options:
         if (option=="compare")
           m(option)=p(i+1)
         else
-          if (option=="fast")
-            m(option)=true
-          else
-            m(option)=p(i+1).toDouble
+          m(option)=p(i+1).toDouble
       }
       
-      if (option=="fast")
-        i=i+1
-      else
-        i=i+2
+      i=i+2
     }
     return m.toMap
   }
@@ -179,6 +175,7 @@ Advanced LSH options:
     var justFileName=fileParts(fileParts.length-1).split("\\.")(0)
 //val file="/home/eirasf/Escritorio/kNNTEMP/car-dopado.libsvm"
     val numNeighbors=options("num_neighbors").asInstanceOf[Double].toInt
+    val numPartitions=options("num_neighbors").asInstanceOf[Double].toInt
     val method=options("method")
     val format=if ((datasetFile.length()>7) && (datasetFile.substring(datasetFile.length()-7) ==".libsvm"))
                  "libsvm"
@@ -204,10 +201,10 @@ Advanced LSH options:
     
     //Load data from file
     val data: RDD[(LabeledPoint, Long)] = if (format=="libsvm")
-                                            MLUtils.loadLibSVMFile(sc, datasetFile).zipWithIndex()
+                                            MLUtils.loadLibSVMFile(sc, datasetFile).zipWithIndex().repartition(numPartitions)
                                           else
                                           {
-                                            val rawData=sc.textFile(datasetFile)
+                                            val rawData=sc.textFile(datasetFile,numPartitions)
                                             rawData.map({ line => val values=line.split(";")
                                                                   (new LabeledPoint(0.0, Vectors.dense(values.slice(1, values.length).map { x => x.toDouble })), values(0).toLong-1)
                                                         })
@@ -276,9 +273,11 @@ val timeStart=System.currentTimeMillis();
     val edges=graph.flatMap({case (index, neighbors) => neighbors.map({case (destination, distance) => (index, destination, distance)}).toSet})
     
     //DEBUG
-    var counted=edges.map({case x=>(x._1,1)}).reduceByKey(_+_).sortBy(_._1)
-    var forCount=counted.map(_._2)
-    println("Obtained "+forCount.sum()+" edges for "+forCount.count()+" nodes in "+(System.currentTimeMillis()-timeStart)+" milliseconds")
+    //var counted=edges.map({case x=>(x._1,1)}).reduceByKey(_+_).sortBy(_._1)
+    //var forCount=counted.map(_._2)
+                          
+    var countEdges=graph.map({case (index, neighbors) => neighbors.size}).sum
+    println("Obtained "+countEdges+" edges for "+graph.count()+" nodes in "+(System.currentTimeMillis()-timeStart)+" milliseconds")
     
     //Save to file
     var fileName=options("output").asInstanceOf[String]
@@ -292,8 +291,6 @@ val timeStart=System.currentTimeMillis();
     edges
         //.sortBy(_._1) //TEMP
         .saveAsTextFile(fileName)
-        
-    /*DEBUG*/
     
     if (compareFile!=null)
     {
@@ -337,7 +334,7 @@ println("Added "+(System.currentTimeMillis()-timeStartR)+" milliseconds")
         }
       }
     }
-    /**/
+    
     //Stop the Spark Context
     sc.stop()
   }

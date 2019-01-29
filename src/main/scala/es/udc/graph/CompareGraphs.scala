@@ -19,7 +19,7 @@ import org.apache.log4j.{Level, Logger}
 
 object CompareGraphs
 {
-    def compare(fileExact:String, file:String, dataset:Option[String]):(Double,Option[Double],Option[Double])=
+    def compare(fileExact:String, file:String, dataset:Option[String]):(Double,Double,Option[Double],Option[Double])=
     {
       val sc=sparkContextSingleton.getInstance()
       //Load data from files
@@ -49,9 +49,20 @@ object CompareGraphs
       
       val data: RDD[(Long, Iterable[(Long,Double)])] = rawData.map({case (e1,e2,d) => (e1,(e2,d))}).groupByKey()
       
+      /*
+      val n=24864
+      data.filter(_._1==n).foreach(_._2.foreach(println))
+      
+      println("-------------------")
+      
+      dataExact.filter(_._1==n).foreach(println)
+      System.exit(0)
+      */
       val totalEdges=dataExact.count()
       
 //println("The graph has "+totalEdges+" edges")
+      
+      val avgNumNeighbors=data.map({case (element, neighbors) => neighbors.size}).mean()
       
       val recall=dataExact.groupByKey().join(data)
                                             .map({case (element, (neighborsExact, neighbors)) => val intersect=neighbors.map(_._1).toSet.intersect(neighborsExact.map(_._1).toSet)
@@ -87,7 +98,7 @@ object CompareGraphs
                                             .mean()
             Some(r)
           }
-      return (recall,recallDistanceBased,distanceError)
+      return (avgNumNeighbors,recall,recallDistanceBased,distanceError)
       /*                                      
       var r=dataExact.groupByKey().join(data)
                             .flatMap({case (element, (neighborsExact, neighbors)) => val intersect=neighbors.map(_._1).toSet.intersect(neighborsExact.map(_._1).toSet)
@@ -158,9 +169,10 @@ println(commonEdges.toDouble/data.first()._2.size)
 println(commonEdges.toDouble)
     }
     
-    def printResults(results:(Double,Option[Double],Option[Double]))=
+    def printResults(results:(Double,Double,Option[Double],Option[Double]))=
     {
-      val (recall,recallDistanceBased,distanceError)=results
+      val (avgNumNeighbors,recall,recallDistanceBased,distanceError)=results
+      println("Average number of neighbors: "+avgNumNeighbors)
       println("Recall: "+recall)
       println("Recall (distance-based): "+(if (recallDistanceBased.isDefined) recallDistanceBased.get else "-"))
       println("Distance error: "+(if (distanceError.isDefined) distanceError.get else "-"))

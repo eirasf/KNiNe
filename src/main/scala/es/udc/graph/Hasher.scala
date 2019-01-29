@@ -60,7 +60,8 @@ object EuclideanLSHasher extends AutotunedHasher
     val maxKLength=if (initialKLength>15) (initialKLength * 1.5).toInt else 22
     val hNTables: Int = Math.floor(Math.pow(log2(dimension), 2)).toInt
     
-    val currentData=initialData//.sample(false, 0.2, 34652912) //20% of the data usually does the job.
+    val currentData=initialData
+    //val currentData=initialData.sample(false, 0.2, 34652912) //20% of the data usually does the job.
     
     println(s"Starting hyperparameter adjusting with:\n\tL:$initialKLength\n\tN:$hNTables\n\tR:$INITIAL_RADIUS")
     
@@ -156,7 +157,7 @@ object EuclideanLSHasher extends AutotunedHasher
       val radius=(leftLimit+rightLimit)/2
       val (numBuckets, largestBucketSize)=getBucketCount(data, hasher, radius)
       println(s"Radius update to $radius [$leftLimit - $rightLimit] got a largest bucket of $largestBucketSize")
-      if ((largestBucketSize>MIN_TOLERANCE*desiredCount) && (largestBucketSize<MAX_TOLERANCE*desiredCount))
+      if ((largestBucketSize>=MIN_TOLERANCE*desiredCount) && (largestBucketSize<=MAX_TOLERANCE*desiredCount))
       {
         println(s"Found suitable radius at $radius")
         return radius

@@ -67,10 +67,11 @@ var numBuckets:Long=2
     //while((numBuckets>1 || nodesLeft>numNeighbors) && nodesLeft>1)
     while(nodesLeft>numNeighbors && nodesLeft>1)
     {
-      //Maps each element to numTables (hash, index) pairs with hashes of keyLenght length.
+      //Maps each element to numTables (hash, index) pairs with hashes of keyLength length.
       val hashRDD=currentData.flatMap({case (index, point) =>
                                         hasher.getHashes(point.features, index, radius)
-                                      });
+                                      })
+                              .coalesce(data.getNumPartitions)
       
       //TODO Should all distances be computed? Maybe there's no point in computing them if we still don't have enough neighbors for an example
       //Should they be stored/cached? It may be enough to store a boolean that records if they have been computed. LRU Cache?
@@ -80,6 +81,7 @@ var numBuckets:Long=2
       var hashBuckets:RDD[(Hash, Iterable[Long], Int)]=hashRDD.groupByKey()
                                                                 .map({case (k, l) => (k, l.toSet)})
                                                                 .flatMap({case (k, s) => if (s.size>1) Some((k, s, s.size)) else None})
+      hashBuckets=hashBuckets.coalesce(data.getNumPartitions)
 //println("Buckets: "+numBuckets)
       /*
       //Print buckets
@@ -127,7 +129,7 @@ var numBuckets:Long=2
         
         //TODO Evaluate bucket size and increase/decrease radius without bruteforcing if necessary.
         
-        var subgraph=getGroupedGraphFromBuckets(data, hashBuckets, numNeighbors, measurer, grouper)
+        var subgraph=getGroupedGraphFromBuckets(data, hashBuckets, numNeighbors, measurer, grouper).coalesce(data.getNumPartitions)
         
         //subgraph.foreach(println(_))
         //subgraph.sortBy(_._1).foreach({case (e,l) => println((e,l.sortBy(_._1)))})
@@ -137,7 +139,7 @@ var numBuckets:Long=2
   //subgraph=refineGraph(data,subgraph,numNeighbors)
         
         //Merge generate graph with existing one.
-        fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors, measurer)
+        fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors, measurer).coalesce(data.getNumPartitions)
   //fullGraph.filter(_._1<20).sortBy(_._1).foreach(println(_))
         
         //TODO TEST
@@ -147,7 +149,7 @@ var numBuckets:Long=2
         //Simplify dataset
         val newData=simplifyDataset(currentData, fullGraph, numNeighbors, maxComparisonsPerItem)
         currentData.unpersist(false)
-        currentData=newData
+        currentData=newData.coalesce(data.getNumPartitions)
         
         //TODO Possibly repartition
         currentData.cache()
@@ -163,6 +165,22 @@ var numBuckets:Long=2
       //DEBUG
       println(" ----- "+nodesLeft+" nodes left. Radius:"+radius)
       //fullGraph.foreach(println(_))
+    }
+    if (fullGraph!=null)
+    {
+      val incomplete=fullGraph.filter({case (id,(viewed,groups)) => (groups.size<grouper.numGroups) || !groups.forall({case (grId,neighborList) => neighborList.size==numNeighbors})})
+                              .map({case (id,(viewed,groups)) =>
+                                if (groups.size>0)
+                                  (id,(viewed,groups.map({case (grId,neighborList) => neighborList.size})))
+                                else
+                                  (id,(viewed,List(0)))
+                                  })
+      if (!incomplete.isEmpty())
+      {
+        println("Recovering "+incomplete.count()+" nodes that didn't have "+numNeighbors+" neighbors")
+        incomplete.foreach({case (id,(viewed,neighborCounts)) => println(id+" -> "+viewed+" views ("+neighborCounts.mkString(";")+")")})
+        currentData=currentData.union(incomplete.join(data.map(_.swap)).map({case (id,(id2,p)) => (id,p)})).coalesce(data.getNumPartitions)
+      }
     }
     if (nodesLeft>0)
     {
@@ -215,7 +233,7 @@ var numBuckets:Long=2
                                                         })
                                                    .reduceByKey({case (dl1,dl2) => dl1 ++ dl2})
                                                    .map({case (o,dl) => (dl + o).toSet})
-totalOps=totalOps+neighbors.map({case x => x.size * x.size }).sum().toLong
+totalOps=totalOps+neighbors.map({case x => x.size * (x.size-1).toFloat / 2.0 }).sum().toLong
         val subgraph=getGroupedGraphFromElementIndexLists(data, neighbors, numNeighbors, measurer)
         
         if (!subgraph.isEmpty())
@@ -235,10 +253,11 @@ totalOps=totalOps+neighbors.map({case x => x.size * x.size }).sum().toLong
 totalOps=totalOps+pairs.count()
       }
     }
+    
     println(s"Operations wrt bruteforce: ${totalOps/bfOps} "+f"($totalOps%d total ops / ${bfOps.toLong}%d)")
     //println((totalOps/bfOps)+"#")
     
-    return fullGraph.map({case (node, (viewed, neighs)) => (node,neighs)})
+    return fullGraph.map({case (node, (viewed, neighs)) => (node,neighs)}).coalesce(data.getNumPartitions)
   }
   
   def computeGroupedGraph(data:RDD[(LabeledPoint,Long)], numNeighbors:Int, keyLength:Int, numTables:Int, startRadius:Double, maxComparisonsPerItem:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, List[(Int,List[(Long, Double)])])]=
