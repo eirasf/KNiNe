@@ -30,8 +30,8 @@ trait Hasher extends Serializable
 
 trait AutotunedHasher extends Hasher
 {
-  val MIN_TOLERANCE=0.2
-  val MAX_TOLERANCE=0.9
+  val MIN_TOLERANCE=0.4
+  val MAX_TOLERANCE=1.1
   def getHasherForDataset(data: RDD[(LabeledPoint, Long)], dimension:Int, desiredComparisons:Int):(EuclideanLSHasher,Int,Double)
   
   def getHasherForDataset(data: RDD[(LabeledPoint, Long)], minusLogOperations:Int):(EuclideanLSHasher,Int,Double)=
@@ -52,7 +52,7 @@ object EuclideanLSHasher extends AutotunedHasher
 
   private def computeBestKeyLength(data: RDD[(LabeledPoint, Long)], dimension:Int, desiredComparisons:Int): (EuclideanLSHasher,Double) = {
     val FRACTION=1.0//0.01
-    val INITIAL_RADIUS=1.0
+    val INITIAL_RADIUS=0.1
     val initialData = data.map(_.swap)//data.sample(false, FRACTION, 56804023).map(_.swap)
     
     val initialKLength: Int = Math.ceil(log2(data.count() / dimension)).toInt + 1
@@ -63,7 +63,7 @@ object EuclideanLSHasher extends AutotunedHasher
     val currentData=initialData
     //val currentData=initialData.sample(false, 0.2, 34652912) //20% of the data usually does the job.
     
-    println(s"Starting hyperparameter adjusting with:\n\tL:$initialKLength\n\tN:$hNTables\n\tR:$INITIAL_RADIUS")
+    println(s"Starting hyperparameter adjusting with:\n\tL:$initialKLength\n\tN:$hNTables\n\tR:$INITIAL_RADIUS\n\tC:$desiredComparisons")
     
     var (leftLimit,rightLimit)=(minKLength,maxKLength)
     var radius = INITIAL_RADIUS
@@ -204,7 +204,8 @@ object EuclideanLSHasher extends AutotunedHasher
     //var mComparisons: Int = Math.abs(Math.ceil(hasher.numTables * Math.sqrt(log2(data.count()/(dimension*0.1))))).toInt
     //var mComparisons: Int = Math.abs(Math.ceil(predictedNTables * Math.sqrt(log2(data.count()/(dimension*0.1)*factorLevel)))).toInt
     //println(s"CMAX set to $mComparisons do approximately ${Math.pow(10,-minusLogOperations)} of the calculations wrt brute force.")
-    val (hasher,radius) = computeBestKeyLength(data, dimension, (desiredComparisons/1.5).toInt)
+    //val (hasher,radius) = computeBestKeyLength(data, dimension, (desiredComparisons/1.5).toInt)
+    val (hasher,radius) = computeBestKeyLength(data, dimension, desiredComparisons.toInt)
 
     println("R0:" + radius + " num_tables:" + hasher.numTables + " keyLength:" + hasher.keyLength + " desiredComparisons:" + desiredComparisons)
     //System.exit(0) //DEBUG

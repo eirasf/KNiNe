@@ -25,7 +25,7 @@ object sparkContextSingleton
 {
   @transient private var instance: SparkContext = _
   private val conf : SparkConf = new SparkConf()//.setAppName("KNiNe")
-                                                //.setMaster("local[4]")
+                                                //.setMaster("local[8]")
                                                 //.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
                                                 //.set("spark.broadcast.factory", "org.apache.spark.broadcast.HttpBroadcastFactory")
                                                 //.set("spark.kryoserializer.buffer.max", "512")
@@ -48,28 +48,28 @@ object KNiNeConfiguration
   def getConfigurationFromOptions(options:Map[String, Any]):KNiNeConfiguration=
   {
     val radius0=if (options.exists(_._1=="radius_start"))
-                      options("radius_start").asInstanceOf[Double]
+                      Some(options("radius_start").asInstanceOf[Double])
                     else
-                      -1.0
+                      None
     val numTables=if (options.exists(_._1=="num_tables"))
-                      options("num_tables").asInstanceOf[Double].toInt
+                      Some(options("num_tables").asInstanceOf[Double].toInt)
                     else
-                      -1
+                      None
     val keyLength=if (options.exists(_._1=="key_length"))
-                      options("key_length").asInstanceOf[Double].toInt
+                      Some(options("key_length").asInstanceOf[Double].toInt)
                     else
-                      -1
-    val maxComparisons:Int=if (options.exists(_._1=="max_comparisons"))
-                         options("max_comparisons").asInstanceOf[Double].toInt
+                      None
+    val maxComparisons=if (options.exists(_._1=="max_comparisons"))
+                         Some(options("max_comparisons").asInstanceOf[Double].toInt)
                        else
-                         -1
+                         None
     return new KNiNeConfiguration(numTables, keyLength, maxComparisons, radius0)
   }
 }
 
-class KNiNeConfiguration(val numTables:Int, val keyLength:Int, val maxComparisons:Int, val radius0:Double)
+class KNiNeConfiguration(val numTables:Option[Int], val keyLength:Option[Int], val maxComparisons:Option[Int], val radius0:Option[Double])
 {
-  def this() = this(-1, -1, -1, LSHKNNGraphBuilder.DEFAULT_RADIUS_START)
+  def this() = this(None, None, None, Some(LSHKNNGraphBuilder.DEFAULT_RADIUS_START))
   override def toString():String=
   {
     return "R0="+this.radius0+";NT="+this.numTables+";KL="+this.keyLength+";MC="+this.maxComparisons
@@ -247,16 +247,16 @@ val timeStart=System.currentTimeMillis();
                         {
                             /* LOOKUP VERSION */
                             builder=new LSHLookupKNNGraphBuilder(data)
-                            if ((kNiNeConf.keyLength>0) && (kNiNeConf.numTables>0))
-                              (builder.computeGraph(data, numNeighbors, kNiNeConf.keyLength, kNiNeConf.numTables, kNiNeConf.radius0, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.lookup)
+                            if (kNiNeConf.keyLength.isDefined && kNiNeConf.numTables.isDefined)
+                              (builder.computeGraph(data, numNeighbors, kNiNeConf.keyLength.get, kNiNeConf.numTables.get, kNiNeConf.radius0, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.lookup)
                             else
                             {
                               //val cMax=if (kNiNeConf.maxComparisons>0) kNiNeConf.maxComparisons else 250
-                              val cMax=if (kNiNeConf.maxComparisons>0) math.max(kNiNeConf.maxComparisons,numNeighbors) else math.min(10*numNeighbors,math.max(250,1.1*numNeighbors))
+                              val cMax=if (kNiNeConf.maxComparisons.isDefined) math.max(kNiNeConf.maxComparisons.get,numNeighbors) else math.max(128,2*numNeighbors)
                               //val factor=if (options.contains("fast")) 4.0 else 0.8
-                              val factor=4.0
+                              val factor=2.0
                               val (hasher,nComps,suggestedRadius)=EuclideanLSHasher.getHasherForDataset(data, (cMax*factor).toInt) //Make constant size buckets
-                              (builder.computeGraph(data, numNeighbors, hasher, suggestedRadius, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.lookup)
+                              (builder.computeGraph(data, numNeighbors, hasher, Some(suggestedRadius), Some(cMax.toInt), new EuclideanDistanceProvider()),builder.lookup)
                             }
                         }
                         else
