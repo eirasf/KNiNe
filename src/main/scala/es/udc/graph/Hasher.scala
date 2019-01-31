@@ -93,7 +93,7 @@ object EuclideanLSHasher extends AutotunedHasher
               return (tmpHasher,radius)
             }
             //We start over with a larger the radius
-            radius=getSuitableRadius(currentData, tmpHasher, radius, None, desiredComparisons)
+            radius=getSuitableRadius(currentData, new EuclideanLSHasher(dimension, initialKLength, hNTables), radius, None, desiredComparisons)
             isRadiusAdjusted=true
             leftLimit=minKLength
             rightLimit=maxKLength
