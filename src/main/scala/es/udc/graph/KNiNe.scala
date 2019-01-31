@@ -177,7 +177,7 @@ Advanced LSH options:
     var justFileName=fileParts(fileParts.length-1).split("\\.")(0)
 //val file="/home/eirasf/Escritorio/kNNTEMP/car-dopado.libsvm"
     val numNeighbors=options("num_neighbors").asInstanceOf[Double].toInt
-    val numPartitions=options("num_neighbors").asInstanceOf[Double].toInt
+    val numPartitions=options("num_partitions").asInstanceOf[Double].toInt
     val method=options("method")
     val format=if ((datasetFile.length()>7) && (datasetFile.substring(datasetFile.length()-7) ==".libsvm"))
                  "libsvm"
