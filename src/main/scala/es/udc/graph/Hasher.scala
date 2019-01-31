@@ -145,10 +145,14 @@ object EuclideanLSHasher extends AutotunedHasher
                      {
                        val (numBuckets, largestBucketSize)=getBucketCount(data, hasher, currentValue)
                        done=largestBucketSize>desiredCount*2
+                       println(s"Radius range updated to [$leftLimit - $currentValue] got a largest bucket of $largestBucketSize")
                        if (!done)
                          currentValue*=2
                        if ((largestBucketSize>MIN_TOLERANCE*desiredCount) && (largestBucketSize<MAX_TOLERANCE*desiredCount))
+                       {
+                         println(s"Found suitable radius at $currentValue")
                          return currentValue
+                       }
                      }
                      currentValue
                    }
