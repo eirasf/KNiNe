@@ -44,7 +44,9 @@ object GraphMerger extends Serializable
   {
     groupedNeighbors1.zip(groupedNeighbors2).map(
         {
-          case ((grId1, l1), (grId2, l2)) => (grId1, mergeNeighborLists(l1, l2, numNeighbors))
+          case ((grId1, l1), (grId2, l2)) =>
+            assert(grId1==grId2)//The lists should be ordered
+            (grId1, mergeNeighborLists(l1, l2, numNeighbors))
         })
   }
 }
