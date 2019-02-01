@@ -32,10 +32,10 @@ trait AutotunedHasher extends Hasher
 {
   val MIN_TOLERANCE=0.4
   val MAX_TOLERANCE=1.1
-  def getHasherForDataset(data: RDD[(LabeledPoint, Long)], dimension:Int, desiredComparisons:Int):(EuclideanLSHasher,Int,Double)
+  def getHasherForDataset(data: RDD[(Long,LabeledPoint)], dimension:Int, desiredComparisons:Int):(EuclideanLSHasher,Int,Double)
   
-  def getHasherForDataset(data: RDD[(LabeledPoint, Long)], minusLogOperations:Int):(EuclideanLSHasher,Int,Double)=
-    getHasherForDataset(data, data.map({case (point, index) => point.features.size}).max(), minusLogOperations)
+  def getHasherForDataset(data: RDD[(Long,LabeledPoint)], minusLogOperations:Int):(EuclideanLSHasher,Int,Double)=
+    getHasherForDataset(data, data.map({case (index, point) => point.features.size}).max(), minusLogOperations)
 }
 
 object EuclideanLSHasher extends AutotunedHasher
@@ -50,10 +50,10 @@ object EuclideanLSHasher extends AutotunedHasher
     Math.log10(n) / Math.log10(2)
   }
 
-  private def computeBestKeyLength(data: RDD[(LabeledPoint, Long)], dimension:Int, desiredComparisons:Int): (EuclideanLSHasher,Double) = {
+  private def computeBestKeyLength(data: RDD[(Long,LabeledPoint)], dimension:Int, desiredComparisons:Int): (EuclideanLSHasher,Double) = {
     val FRACTION=1.0//0.01
     val INITIAL_RADIUS=0.1
-    val initialData = data.map(_.swap)//data.sample(false, FRACTION, 56804023).map(_.swap)
+    val initialData = data//data.sample(false, FRACTION, 56804023).map(_.swap)
     
     val initialKLength: Int = Math.ceil(log2(data.count() / dimension)).toInt + 1
     val minKLength=if (initialKLength>15) (initialKLength / 2).toInt else 7 
@@ -201,7 +201,7 @@ object EuclideanLSHasher extends AutotunedHasher
     return (numBuckets, largestBucketSize)
   }
   
-  override def getHasherForDataset(data: RDD[(LabeledPoint, Long)], dimension:Int, desiredComparisons:Int):(EuclideanLSHasher,Int,Double)=
+  override def getHasherForDataset(data: RDD[(Long,LabeledPoint)], dimension:Int, desiredComparisons:Int):(EuclideanLSHasher,Int,Double)=
   {
     //val factorLevel=Math.pow(10,-minusLogOperations)/0.001
     //val predictedNTables: Int = Math.floor(Math.pow(log2(dimension), 2)).toInt

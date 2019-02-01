@@ -16,6 +16,7 @@ import org.apache.spark.mllib.linalg.SparseVector
 import es.udc.graph.utils.GraphUtils
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.log4j.{Level, Logger}
+import org.apache.spark.HashPartitioner
 
 object CompareGraphs
 {
@@ -36,7 +37,7 @@ object CompareGraphs
       {
         hasDistances=true
         //Load data from file
-        val datasetRDD: RDD[(LabeledPoint, Long)] = MLUtils.loadLibSVMFile(sc, dataset.get).zipWithIndex()
+        val datasetRDD: RDD[(Long,LabeledPoint)] = MLUtils.loadLibSVMFile(sc, dataset.get).zipWithIndex().map(_.swap).partitionBy(new HashPartitioner(KNiNe.DEFAULT_NUM_PARTITIONS.toInt))
         val lookup:BroadcastLookupProvider=new BroadcastLookupProvider(datasetRDD)
         val measurer=new EuclideanDistanceProvider()
         rawData=rawData.flatMap({case (index1, index2, nothing) =>
@@ -47,7 +48,7 @@ object CompareGraphs
                             })
       }
       
-      val data: RDD[(Long, Iterable[(Long,Double)])] = rawData.map({case (e1,e2,d) => (e1,(e2,d))}).groupByKey()
+      val data: RDD[(Long, Iterable[(Long,Double)])] = rawData.map({case (e1,e2,d) => (e1,(e2,d))}).partitionBy(new HashPartitioner(KNiNe.DEFAULT_NUM_PARTITIONS.toInt)).groupByKey()
       
       /*
       val n=24864

@@ -132,13 +132,13 @@ object BruteForceKNNGraphBuilder
     graph
   }
   
-  def computeGroupedGraph(data:RDD[(LabeledPoint, Long)], numNeighbors:Int):List[(Long, (Int,List[(Int,List[(Long, Double)])]))]=
+  def computeGroupedGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int):List[(Long, (Int,List[(Int,List[(Long, Double)])]))]=
   {
-    val arrayIndices=data.map(_._2).collect()
+    val arrayIndices=data.map(_._1).collect()
     val lookup=new BroadcastLookupProvider(data)
     computeGroupedGraph(arrayIndices, new BroadcastLookupProvider(data), numNeighbors)
   }
-    
+  
   def computeGroupedGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int):List[(Long, (Int,List[(Int,List[(Long, Double)])]))]=
     computeGroupedGraph(arrayIndices, lookup, numNeighbors, new EuclideanDistanceProvider())
     
@@ -185,13 +185,13 @@ object BruteForceKNNGraphBuilder
             .reduceByKey({case (l1,l2) => l1++l2})
   }
   
-  def parallelComputeGraph(data:RDD[(LabeledPoint, Long)], numNeighbors:Int):(RDD[(Long, List[(Long, Double)])],LookupProvider)=
+  def parallelComputeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int):(RDD[(Long, List[(Long, Double)])],LookupProvider)=
     parallelComputeGraph(data, numNeighbors, new EuclideanDistanceProvider())
     
-  def parallelComputeGraph(data:RDD[(LabeledPoint, Long)], numNeighbors:Int, measurer:DistanceProvider):(RDD[(Long, List[(Long, Double)])],LookupProvider)=
+  def parallelComputeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, measurer:DistanceProvider):(RDD[(Long, List[(Long, Double)])],LookupProvider)=
   {
     val lookup=new BroadcastLookupProvider(data)
-    val graph=parallelComputeGroupedGraph(data.map(_._2).collect(), lookup, numNeighbors, measurer, new DummyGroupingProvider())
+    val graph=parallelComputeGroupedGraph(data.map(_._1).collect(), lookup, numNeighbors, measurer, new DummyGroupingProvider())
     return (graph.map(
                {case (i1,groupedNeighbors) =>
                  (i1,groupedNeighbors.head._2)

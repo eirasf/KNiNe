@@ -19,6 +19,7 @@ import org.apache.log4j.{Level, Logger}
 
 import sys.process._
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.HashPartitioner
 
 //import org.apache.spark.sql.SparkSession
 
@@ -203,15 +204,15 @@ Advanced LSH options:
     rootLogger.setLevel(Level.WARN)
     
     //Load data from file
-    val data: RDD[(LabeledPoint, Long)] = if (format=="libsvm")
-                                            MLUtils.loadLibSVMFile(sc, datasetFile).zipWithIndex().repartition(numPartitions)
+    val data: RDD[(Long,LabeledPoint)] = if (format=="libsvm")
+                                            MLUtils.loadLibSVMFile(sc, datasetFile).zipWithIndex().map(_.swap)
                                           else
                                           {
                                             val rawData=sc.textFile(datasetFile,numPartitions)
                                             rawData.map({ line => val values=line.split(";")
-                                                                  (new LabeledPoint(0.0, Vectors.dense(values.slice(1, values.length).map { x => x.toDouble })), values(0).toLong-1)
+                                                                  (values(0).toLong-1, new LabeledPoint(0.0, Vectors.dense(values.slice(1, values.length).map { x => x.toDouble })))
                                                         })
-                                          }
+                                          }.partitionBy(new HashPartitioner(numPartitions))
     
     /* DATASET INSPECTION - DEBUG
     val summary=data.map({case x => (x._1.features.toArray,x._1.features.toArray,x._1.features.toArray)}).reduce({case ((as,aM,am),(bs,bM,bm)) => (as.zip(bs).map({case (ea,eb) => ea+eb}),aM.zip(bM).map({case (ea,eb) => Math.max(ea,eb)}),am.zip(bm).map({case (ea,eb) => Math.min(ea,eb)}))})
@@ -274,7 +275,7 @@ val timeStart=System.currentTimeMillis();
                   })
     */
                 
-    val edges=graph.flatMap({case (index, neighbors) => neighbors.map({case (destination, distance) => (index, destination, distance)}).toSet})
+    //
     
     //DEBUG
     //var counted=edges.map({case x=>(x._1,1)}).reduceByKey(_+_).sortBy(_._1)
@@ -283,60 +284,64 @@ val timeStart=System.currentTimeMillis();
     var countEdges=graph.map({case (index, neighbors) => neighbors.size}).sum
     println("Obtained "+countEdges+" edges for "+graph.count()+" nodes in "+(System.currentTimeMillis()-timeStart)+" milliseconds")
     
+    
+     
     //Save to file
     var fileName=options("output").asInstanceOf[String]
     var fileNameOriginal=fileName
-    var i=0
-    while (java.nio.file.Files.exists(java.nio.file.Paths.get(fileName.substring(7))))
+    // DEBUG - Skip save
+    val skipSave=false
+    if (!skipSave)
     {
-      i=i+1
-      fileName=fileNameOriginal+"-"+i
-    }
-    edges
-        //.sortBy(_._1) //TEMP
-        .saveAsTextFile(fileName)
-    
-    if (compareFile!=null)
-    {
-      //TEMP - Compare with ground truth
-      CompareGraphs.printResults(CompareGraphs.compare(compareFile, fileName, None))
-      //CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
-      
-      if (method=="lsh")
+      var i=0
+      while (java.nio.file.Files.exists(java.nio.file.Paths.get(fileName.substring(7))))
       {
-        var refinedGraph=graph.map({case (v, listNeighs) => (v, (0, listNeighs))})
-        for (i <- 0 until 1)
-        {
-          println("Refined "+i)
-val timeStartR=System.currentTimeMillis();          
+        i=i+1
+        fileName=fileNameOriginal+"-"+i
+      }
+      val edges=graph.flatMap({case (index, neighbors) => neighbors.map({case (destination, distance) => (index, destination, distance)}).toSet})
+      edges.saveAsTextFile(fileName)
+    }
+    var fileNameR=fileName
+    if (method=="lsh")
+    {
+      var refinedGraph=graph.map({case (v, listNeighs) => (v, (0, listNeighs))})
+      for (i <- 0 until 1)
+      {
+        println("Refined "+i)
+        val timeStartR=System.currentTimeMillis();          
           refinedGraph=builder.refineGraph(data, refinedGraph, numNeighbors, new EuclideanDistanceProvider())
-          val fileNameR=fileName+"refined"+i
+          fileNameR=fileName+"refined"+i
           val edgesR=refinedGraph.flatMap({case (index, (c,neighbors)) =>
                                                    neighbors.map({case (destination, distance) =>
                                                                          (index, destination, distance)}).toSet})
-val totalElements=data.count()
-val e=edgesR.first()
-println("Added "+(System.currentTimeMillis()-timeStartR)+" milliseconds")
-          
-          edgesR
-              //.sortBy(_._1) //TEMP
-              .saveAsTextFile(fileNameR)
-              
-          //TEMP - Compare with ground truth
-          CompareGraphs.printResults(CompareGraphs.compare(compareFile, fileNameR, None))
-          //CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
-          
-          /* //DEBUG - Show how the graph has improved
-          firstComparison.join(secondComparison)
-                         .flatMap({case (element,((a,b,furthest,list), (a2,b2,furthest2,list2))) => if (b!=b2 || list!=list2)
-                                                                                                      Some(element, b.diff(b2), b2.diff(b))
-                                                                                                    else
-                                                                                                      None})
-                         .sortBy(_._1)
-                         .foreach(println(_))
-          */
-        }
+        val totalElements=data.count()
+        val e=edgesR.first()
+        println("Added "+(System.currentTimeMillis()-timeStartR)+" milliseconds")
+        
+        if (!skipSave)
+          edgesR.saveAsTextFile(fileNameR)
       }
+    }
+    if (compareFile!=null)
+    {
+      //Compare with ground truth
+      CompareGraphs.printResults(CompareGraphs.compare(compareFile, fileName, None))
+      //CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
+      
+      //Compare refined with ground truth
+      CompareGraphs.printResults(CompareGraphs.compare(compareFile, fileNameR, None))
+      //CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
+          
+      /* //DEBUG - Show how the graph has improved
+      firstComparison.join(secondComparison)
+                     .flatMap({case (element,((a,b,furthest,list), (a2,b2,furthest2,list2))) => if (b!=b2 || list!=list2)
+                                                                                                  Some(element, b.diff(b2), b2.diff(b))
+                                                                                                else
+                                                                                                  None})
+                     .sortBy(_._1)
+                     .foreach(println(_))
+      */
     }
     
     //Stop the Spark Context
