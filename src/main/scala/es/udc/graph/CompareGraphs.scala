@@ -165,8 +165,8 @@ println(commonEdges.toDouble/data.first()._2.size)
                             .sortBy(_._1)
                             .foreach(println(_))*/
                                
-//println("The aprox. graph has "+commonEdges+" edges in common ("+(commonEdges.toDouble/totalEdges.toDouble)+")")
-println(commonEdges.toDouble)
+      println("The aprox. graph has "+commonEdges+" edges in common")
+      //println(commonEdges.toDouble)
     }
     
     def printResults(results:(Double,Double,Option[Double],Option[Double]))=

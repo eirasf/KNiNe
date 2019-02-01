@@ -37,6 +37,7 @@ object sparkContextSingleton
   {
     val spark = SparkSession.builder//.appName("KNiNe")
                                     //.master("local[8]")
+                                    //.config("spark.driver.maxResultSize", "2048MB")
                                     .getOrCreate()
     /*if (instance == null)
       instance = SparkContext.getOrCreate(conf)//new SparkContext(conf)
@@ -82,7 +83,7 @@ object KNiNe
 {
   val DEFAULT_METHOD="lsh"
   val DEFAULT_K=10
-  val DEFAULT_NUM_PARTITIONS=512
+  val DEFAULT_NUM_PARTITIONS:Double=512
   
   def showUsageAndExit()=
   {
@@ -299,7 +300,7 @@ val timeStart=System.currentTimeMillis();
     {
       //TEMP - Compare with ground truth
       CompareGraphs.printResults(CompareGraphs.compare(compareFile, fileName, None))
-      CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
+      //CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
       
       if (method=="lsh")
       {
@@ -323,7 +324,7 @@ println("Added "+(System.currentTimeMillis()-timeStartR)+" milliseconds")
               
           //TEMP - Compare with ground truth
           CompareGraphs.printResults(CompareGraphs.compare(compareFile, fileNameR, None))
-          CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
+          //CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
           
           /* //DEBUG - Show how the graph has improved
           firstComparison.join(secondComparison)

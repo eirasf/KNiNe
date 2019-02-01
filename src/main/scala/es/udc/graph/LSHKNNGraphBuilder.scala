@@ -275,13 +275,13 @@ var numBuckets:Long=2
         }
         //println(nodesLeft+" nodes left after first attempt")
       }
-      if (nodesLeft>0) //No solution other than to check these points with every other
+      /*if (nodesLeft>0) //No solution other than to check these points with every other
       {
         val pairs=currentData.cartesian(fullGraph.map({case (point, neighbors) => point}))
         val subgraph=getGroupedGraphFromPairs(data, pairs, numNeighbors, measurer, grouper)
         fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors, measurer)
 totalOps=totalOps+pairs.count()
-      }
+      }*/
     }
     
     println(s"Operations wrt bruteforce: ${totalOps/bfOps} "+f"($totalOps%d total ops / ${bfOps.toLong}%d)")

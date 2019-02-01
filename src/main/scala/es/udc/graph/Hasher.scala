@@ -251,7 +251,7 @@ class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int) extends Hasher
     var hashes=List[(Hash, Long)]()
     for(i <- 0 until numTables)
     {
-      val hash=new Array[Integer](keyLength)
+      val hash=new Array[Integer](keyLength+1)
       for (j <- 0 until keyLength)
       {
         var dotProd:Double=0
@@ -278,6 +278,7 @@ class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int) extends Hasher
         dotProd/=radius
         hash(j)=math.floor((dotProd + b(i)(j))/w).toInt
       }
+      hash(keyLength)=i//Add the number of table to the end of the hash to avoid collisions with hashes from other tables.
       hashes=(new Hash(hash),index) :: hashes
     }
     return hashes
