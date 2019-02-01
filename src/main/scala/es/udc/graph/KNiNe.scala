@@ -36,8 +36,8 @@ object sparkContextSingleton
 	*/
   def getInstance(): SparkContext=
   {
-    val spark = SparkSession.builder//.appName("KNiNe")
-                                    //.master("local[8]")
+    val spark = SparkSession.builder.appName("KNiNe")
+                                    .master("local[8]")
                                     //.config("spark.driver.maxResultSize", "2048MB")
                                     .getOrCreate()
     /*if (instance == null)
@@ -204,7 +204,7 @@ Advanced LSH options:
     rootLogger.setLevel(Level.WARN)
     
     //Load data from file
-    val data: RDD[(Long,LabeledPoint)] = if (format=="libsvm")
+    val data: RDD[(Long,LabeledPoint)] = (if (format=="libsvm")
                                             MLUtils.loadLibSVMFile(sc, datasetFile).zipWithIndex().map(_.swap)
                                           else
                                           {
@@ -212,7 +212,7 @@ Advanced LSH options:
                                             rawData.map({ line => val values=line.split(";")
                                                                   (values(0).toLong-1, new LabeledPoint(0.0, Vectors.dense(values.slice(1, values.length).map { x => x.toDouble })))
                                                         })
-                                          }.partitionBy(new HashPartitioner(numPartitions))
+                                          }).partitionBy(new HashPartitioner(numPartitions))
     
     /* DATASET INSPECTION - DEBUG
     val summary=data.map({case x => (x._1.features.toArray,x._1.features.toArray,x._1.features.toArray)}).reduce({case ((as,aM,am),(bs,bM,bm)) => (as.zip(bs).map({case (ea,eb) => ea+eb}),aM.zip(bM).map({case (ea,eb) => Math.max(ea,eb)}),am.zip(bm).map({case (ea,eb) => Math.min(ea,eb)}))})
