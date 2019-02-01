@@ -36,8 +36,8 @@ object sparkContextSingleton
 	*/
   def getInstance(): SparkContext=
   {
-    val spark = SparkSession.builder.appName("KNiNe")
-                                    .master("local[8]")
+    val spark = SparkSession.builder//.appName("KNiNe")
+                                    //.master("local[8]")
                                     //.config("spark.driver.maxResultSize", "2048MB")
                                     .getOrCreate()
     /*if (instance == null)
