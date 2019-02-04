@@ -56,7 +56,7 @@ object EuclideanLSHasher extends AutotunedHasher
     val initialData = data//data.sample(false, FRACTION, 56804023).map(_.swap)
     
     val initialKLength: Int = Math.ceil(log2(data.count() / dimension)).toInt + 1
-    val minKLength=if (initialKLength>15) (initialKLength / 2).toInt else 7 
+    val minKLength=if (initialKLength>10) (initialKLength / 2).toInt else 5 
     val maxKLength=if (initialKLength>15) (initialKLength * 1.5).toInt else 22
     val hNTables: Int = Math.floor(Math.pow(log2(dimension), 2)).toInt
     
