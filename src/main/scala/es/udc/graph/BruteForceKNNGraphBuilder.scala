@@ -154,13 +154,13 @@ object BruteForceKNNGraphBuilder
         })
   }*/
   
-  def parallelComputeGroupedGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, List[(Int,List[(Long, Double)])])]=
+  def parallelComputeGroupedGraph(arrayIndices:Array[Long], lookup:LookupProvider, numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider, numPartitions:Int):RDD[(Long, List[(Int,List[(Long, Double)])])]=
   {
     var sc=sparkContextSingleton.getInstance()
     
-    var rddIndices=sc.parallelize(arrayIndices)
+    var rddIndices=sc.parallelize(arrayIndices, numPartitions)
     
-    var rddPairs=rddIndices.cartesian(rddIndices)
+    var rddPairs=rddIndices.cartesian(rddIndices).coalesce(numPartitions)
     
     //TODO Check whether filtering i<j improves performance
     return rddPairs.flatMap({case (i,j) => if (i==j)
@@ -185,13 +185,13 @@ object BruteForceKNNGraphBuilder
             .reduceByKey({case (l1,l2) => l1++l2})
   }
   
-  def parallelComputeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int):(RDD[(Long, List[(Long, Double)])],LookupProvider)=
-    parallelComputeGraph(data, numNeighbors, new EuclideanDistanceProvider())
+  def parallelComputeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, numPartitions:Int):(RDD[(Long, List[(Long, Double)])],LookupProvider)=
+    parallelComputeGraph(data, numNeighbors, new EuclideanDistanceProvider(), numPartitions)
     
-  def parallelComputeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, measurer:DistanceProvider):(RDD[(Long, List[(Long, Double)])],LookupProvider)=
+  def parallelComputeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, measurer:DistanceProvider, numPartitions:Int):(RDD[(Long, List[(Long, Double)])],LookupProvider)=
   {
     val lookup=new BroadcastLookupProvider(data)
-    val graph=parallelComputeGroupedGraph(data.map(_._1).collect(), lookup, numNeighbors, measurer, new DummyGroupingProvider())
+    val graph=parallelComputeGroupedGraph(data.map(_._1).collect(), lookup, numNeighbors, measurer, new DummyGroupingProvider(), numPartitions)
     return (graph.map(
                {case (i1,groupedNeighbors) =>
                  (i1,groupedNeighbors.head._2)
