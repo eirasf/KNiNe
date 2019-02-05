@@ -198,7 +198,7 @@ Advanced LSH options:
     
     //Set up Spark Context
     val sc=sparkContextSingleton.getInstance()
-    println(s"Default parallelism: $sc.defaultParallelism")
+    println(s"Default parallelism: ${sc.defaultParallelism}")
     //Stop annoying INFO messages
     val rootLogger = Logger.getRootLogger()
     rootLogger.setLevel(Level.WARN)
