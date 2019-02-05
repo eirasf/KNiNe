@@ -58,14 +58,12 @@ object TruncateGraph
                                                         }).partitionBy(new HashPartitioner(numPartitions))
                                                         .reduceByKey({case (l1,l2) => GraphMerger.mergeNeighborLists(l1,l2,128)})
                                                         .sortBy(_._1, true, numPartitions)
-                                                        
     
-    for (k <- List(2,4,8,16,32,64))
+    for (k <- List(2,4,8,16,32,64,128))
     {
-      data.flatMap({case (id,neighbors) => neighbors.take(k).map({case (dest,dist) => (id,dest,dist)})}).saveAsTextFile(datasetFile.replace("128", ""+k))
-      println(s"Saved ${k}-NN graph in "+datasetFile.replace("128", ""+k))
+      data.flatMap({case (id,neighbors) => neighbors.takeRight(k).map({case (dest,dist) => (id,dest,dist)})}).saveAsTextFile(datasetFile.replace("128", ""+k))
+      println(s"Saved ${k}-NN graph in "+datasetFile.replace("128_", ""+k))
     }
-    
     //Stop the Spark Context
     sc.stop()
   }
