@@ -73,7 +73,7 @@ object KNiNeConfiguration
 
 class KNiNeConfiguration(val numTables:Option[Int], val keyLength:Option[Int], val maxComparisons:Option[Int], val radius0:Option[Double])
 {
-  def this() = this(None, None, None, Some(LSHKNNGraphBuilder.DEFAULT_RADIUS_START))
+  def this() = this(None, None, None, None)
   override def toString():String=
   {
     return "R0="+this.radius0+";NT="+this.numTables+";KL="+this.keyLength+";MC="+this.maxComparisons
