@@ -43,12 +43,19 @@ object GraphMerger extends Serializable
   
   def mergeGroupedNeighbors(groupedNeighbors1:List[(Int,List[(Long,Double)])], groupedNeighbors2:List[(Int,List[(Long,Double)])], numNeighbors:Int):List[(Int, List[(Long, Double)])]=
   {
-    groupedNeighbors1.zip(groupedNeighbors2).map(
+    val mapNeighbors2=groupedNeighbors2.toMap
+    /*groupedNeighbors1.zip(groupedNeighbors2).map(
         {
           case ((grId1, l1), (grId2, l2)) =>
             assert(grId1==grId2)//The lists should be ordered
             (grId1, mergeNeighborLists(l1, l2, numNeighbors))
-        })
+        })*/
+    groupedNeighbors1.map({case (grId1, l1) => 
+                              val newList:List[(Long,Double)]=if (mapNeighbors2.contains(grId1))
+                                            l1 ++ mapNeighbors2.get(grId1).get
+                                          else
+                                            l1
+                              (grId1, newList)})
   }
 }
 
