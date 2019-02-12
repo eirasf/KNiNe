@@ -124,7 +124,7 @@ abstract class LSHKNNGraphBuilder
   
         val numStepOps=stepOps.map({case x => x._2 * x._1 * (x._1 - 1) /2.0}).sum().toLong
         val largestBucketSize=stepOps.map(_._1).max
-        allElementsInSingleBucket=largestBucketSize==nodesLeft && numBuckets==1
+        allElementsInSingleBucket=largestBucketSize==nodesLeft
   totalOps=totalOps+numStepOps
   
         println(f"Performing $numStepOps%g ops (largest bucket has $largestBucketSize%d elements)")
