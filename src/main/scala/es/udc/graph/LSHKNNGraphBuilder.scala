@@ -59,10 +59,11 @@ abstract class LSHKNNGraphBuilder
     var fullGraph:RDD[(Long, (Int,List[(Int,List[(Long, Double)])]))]=null //(node, (viewed, List[(groupingId,List[(neighbor,distance))]]))
     var currentData=data
     var radius=startRadius.getOrElse(LSHKNNGraphBuilder.DEFAULT_RADIUS_START)//5//0.1
-val totalElements=currentData.count()
-val bfOps:Double=totalElements*(totalElements-1)/2.0
-var totalOps:Long=0
-var numBuckets:Long=2
+    val totalElements=currentData.count()
+    val bfOps:Double=totalElements*(totalElements-1)/2.0
+    var totalOps:Long=0
+    var numBuckets:Long=2
+    var allElementsInSingleBucket=false
     var nodesLeft=currentData.count()
     
     println(f"Starting $numNeighbors%d-NN graph computation for $nodesLeft%d nodes")
@@ -71,7 +72,7 @@ var numBuckets:Long=2
     //while(!currentData.isEmpty())
     //while(nodesLeft>numNeighbors)
     //while((numBuckets>1 || nodesLeft>numNeighbors) && nodesLeft>1)
-    while(nodesLeft>numNeighbors && nodesLeft>1 && numBuckets>1)
+    while(nodesLeft>numNeighbors && nodesLeft>1 && !allElementsInSingleBucket)
     {
       //Maps each element to numTables (hash, index) pairs with hashes of keyLength length.
       val hashRDD=currentData.flatMap({case (index, point) =>
@@ -123,6 +124,7 @@ var numBuckets:Long=2
   
         val numStepOps=stepOps.map({case x => x._2 * x._1 * (x._1 - 1) /2.0}).sum().toLong
         val largestBucketSize=stepOps.map(_._1).max
+        allElementsInSingleBucket=largestBucketSize==nodesLeft && numBuckets==1
   totalOps=totalOps+numStepOps
   
         println(f"Performing $numStepOps%g ops (largest bucket has $largestBucketSize%d elements)")
