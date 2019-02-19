@@ -111,7 +111,7 @@ object EuclideanLSHasher extends AutotunedHasher
               return (tmpHasher,radius)
             }
             //We start over with a smaller the radius
-            radius=getSuitableRadius(currentData, tmpHasher, 0.00001, Some(radius), desiredComparisons)
+            radius=getSuitableRadius(currentData, tmpHasher, 0.000000000001, Some(radius), desiredComparisons)
             isRadiusAdjusted=true
             leftLimit=minKLength
             rightLimit=maxKLength
@@ -171,7 +171,7 @@ object EuclideanLSHasher extends AutotunedHasher
       else
         if (largestBucketSize>MIN_TOLERANCE*desiredCount)
           rightLimit=radius
-      if (rightLimit-leftLimit<0.01)
+      if (rightLimit-leftLimit<0.000000001)
       {
         println(s"Had to select radius = $radius")
         return radius
