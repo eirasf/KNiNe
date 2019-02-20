@@ -67,16 +67,16 @@ object KNiNeConfiguration
                          Some(options("max_comparisons").asInstanceOf[Double].toInt)
                        else
                          None
-    return new KNiNeConfiguration(numTables, keyLength, maxComparisons, radius0)
+    return new KNiNeConfiguration(numTables, keyLength, maxComparisons, radius0, options("refine").asInstanceOf[Boolean])
   }
 }
 
-class KNiNeConfiguration(val numTables:Option[Int], val keyLength:Option[Int], val maxComparisons:Option[Int], val radius0:Option[Double])
+class KNiNeConfiguration(val numTables:Option[Int], val keyLength:Option[Int], val maxComparisons:Option[Int], val radius0:Option[Double], val refine:Boolean)
 {
-  def this() = this(None, None, None, None)
+  def this() = this(None, None, None, None, false)
   override def toString():String=
   {
-    return "R0="+this.radius0+";NT="+this.numTables+";KL="+this.keyLength+";MC="+this.maxComparisons
+    return "R0="+this.radius0+";NT="+this.numTables+";KL="+this.keyLength+";MC="+this.maxComparisons+";Refine="+this.refine
   }
 }
 
@@ -97,6 +97,7 @@ Options:
     -t    Maximum comparisons per item (default: auto)
     -c    File containing the graph to compare to (default: nothing)
     -p    Number of partitions for the data RDDs (default: """+KNiNe.DEFAULT_NUM_PARTITIONS+""")
+    -s    Skip graph refinement (LSH only) (default: false)
 
 Advanced LSH options:
     -n    Number of hashes per item (default: auto)
@@ -108,7 +109,8 @@ Advanced LSH options:
     val m=scala.collection.mutable.Map[String, Any]("num_neighbors" -> KNiNe.DEFAULT_K.toDouble,
                                                     "method" -> KNiNe.DEFAULT_METHOD,
                                                     "radius_start" -> LSHKNNGraphBuilder.DEFAULT_RADIUS_START,
-                                                    "num_partitions" -> KNiNe.DEFAULT_NUM_PARTITIONS)
+                                                    "num_partitions" -> KNiNe.DEFAULT_NUM_PARTITIONS,
+                                                    "refine" -> true)
     if (p.length<=1)
       showUsageAndExit()
     
@@ -118,7 +120,7 @@ Advanced LSH options:
     var i=2
     while (i < p.length)
     {
-      if ((i>=p.length-1) || (p(i).charAt(0)!='-'))
+      if ((i>=p.length) || (p(i).charAt(0)!='-'))
       {
         println("Unknown option: "+p(i))
         showUsageAndExit()
@@ -134,6 +136,7 @@ Advanced LSH options:
           case "t"   => "max_comparisons"
           case "c"   => "compare"
           case "p"   => "num_partitions"
+          case "s"   => "refine"
           case somethingElse => readOptionName
         }
       if (!m.keySet.exists(_==option) && option==readOptionName)
@@ -153,13 +156,21 @@ Advanced LSH options:
       }
       else
       {
-        if (option=="compare")
-          m(option)=p(i+1)
+        if (option=="refine")
+          m("refine")=false
         else
-          m(option)=p(i+1).toDouble
+        {
+          if (option=="compare")
+            m(option)=p(i+1)
+          else
+            m(option)=p(i+1).toDouble
+        }
       }
       
-      i=i+2
+      if (option!="refine")
+        i=i+2
+      else
+        i=i+1
     }
     return m.toMap
   }
@@ -303,7 +314,7 @@ val timeStart=System.currentTimeMillis();
       edges.saveAsTextFile(fileName)
     }
     var fileNameR=fileName
-    if (method=="lsh")
+    if ((method=="lsh") && kNiNeConf.refine)
     {
       var refinedGraph=graph.map({case (v, listNeighs) => (v, (0, listNeighs))})
       for (i <- 0 until 1)
