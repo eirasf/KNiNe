@@ -55,7 +55,11 @@ object GraphMerger extends Serializable
                                             l1 ++ mapNeighbors2.get(grId1).get
                                           else
                                             l1
-                              (grId1, newList)})
+                              if (newList.size<=numNeighbors)
+                                (grId1, newList)
+                              else
+                                (grId1, newList.sortBy(_._2).take(numNeighbors))
+                                })
   }
 }
 
@@ -192,8 +196,11 @@ abstract class LSHKNNGraphBuilder
                                   })
       if (!incomplete.isEmpty())
       {
+        //DEBUG
+        //incomplete.map({case (id,(viewed,groupSizes)) => (groupSizes.sum,1)}).reduceByKey(_+_).sortBy(_._1).foreach(println)
+        //incomplete.take(100).foreach({case (id,(viewed,neighborCounts)) => println(id+" -> "+viewed+" views ("+neighborCounts.mkString(";")+")")})
+        
         println("Recovering "+incomplete.count()+" nodes that didn't have "+numNeighbors+" neighbors")
-        //incomplete.foreach({case (id,(viewed,neighborCounts)) => println(id+" -> "+viewed+" views ("+neighborCounts.mkString(";")+")")})
         currentData=currentData.union(incomplete.join(data).map({case (id,(id2,p)) => (id,p)})).coalesce(data.getNumPartitions)
       }
     }
