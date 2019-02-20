@@ -34,8 +34,8 @@ trait AutotunedHasher extends Hasher
   val MAX_TOLERANCE=1.1
   def getHasherForDataset(data: RDD[(Long,LabeledPoint)], dimension:Int, desiredComparisons:Int):(EuclideanLSHasher,Int,Double)
   
-  def getHasherForDataset(data: RDD[(Long,LabeledPoint)], minusLogOperations:Int):(EuclideanLSHasher,Int,Double)=
-    getHasherForDataset(data, data.map({case (index, point) => point.features.size}).max(), minusLogOperations)
+  def getHasherForDataset(data: RDD[(Long,LabeledPoint)], desiredComparisons:Int):(EuclideanLSHasher,Int,Double)=
+    getHasherForDataset(data, data.map({case (index, point) => point.features.size}).max(), desiredComparisons)
 }
 
 object EuclideanLSHasher extends AutotunedHasher
@@ -209,7 +209,7 @@ object EuclideanLSHasher extends AutotunedHasher
     //var mComparisons: Int = Math.abs(Math.ceil(predictedNTables * Math.sqrt(log2(data.count()/(dimension*0.1)*factorLevel)))).toInt
     //println(s"CMAX set to $mComparisons do approximately ${Math.pow(10,-minusLogOperations)} of the calculations wrt brute force.")
     //val (hasher,radius) = computeBestKeyLength(data, dimension, (desiredComparisons/1.5).toInt)
-    val (hasher,radius) = computeBestKeyLength(data, dimension, desiredComparisons.toInt)
+    val (hasher,radius) = computeBestKeyLength(data, dimension, desiredComparisons)
 
     println("R0:" + radius + " num_tables:" + hasher.numTables + " keyLength:" + hasher.keyLength + " desiredComparisons:" + desiredComparisons)
     //System.exit(0) //DEBUG
