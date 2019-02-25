@@ -89,7 +89,7 @@ object EuclideanLSHasher extends AutotunedHasher
           {
             if (isRadiusAdjusted)
             {
-              println(s"Had to go with hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
+              println(s"WARNING! - Had to go with hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
               return (tmpHasher,radius)
             }
             //We start over with a larger the radius
@@ -107,7 +107,7 @@ object EuclideanLSHasher extends AutotunedHasher
           {
             if (isRadiusAdjusted)
             {
-              println(s"Had to go with hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
+              println(s"WARNING! - Had to go with hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
               return (tmpHasher,radius)
             }
             //We start over with a smaller the radius
@@ -121,7 +121,7 @@ object EuclideanLSHasher extends AutotunedHasher
         }
         if (rightLimit<=leftLimit)
         {
-          println(s"Had to go with hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
+          println(s"WARNING! - Had to go with hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
           return (tmpHasher,radius)
         }
       }
@@ -170,10 +170,21 @@ object EuclideanLSHasher extends AutotunedHasher
         leftLimit=radius
       else
         if (largestBucketSize>MIN_TOLERANCE*desiredCount)
+        {
           rightLimit=radius
+          /*
+          //DEBUG
+          
+            val currentHashes = hashData(data, hasher, radius)
+            var lookup:BroadcastLookupProvider=new BroadcastLookupProvider(data)
+            //bucketCountBySize is a list of (bucket_size, count) tuples that indicates how many buckets of a given size there are. Count must be >1.
+            val bucketCountBySize = currentHashes.groupByKey().filter({case (h,indexList) => indexList.size>1}).flatMap({case (h,indexList) => indexList.map(lookup.lookup(_))}).take(100).foreach(println)
+            System.exit(0) 
+          */
+        }
       if (rightLimit-leftLimit<0.000000001)
       {
-        println(s"Had to select radius = $radius")
+        println(s"WARNING! - Had to select radius = $radius")
         return radius
       }
     }
