@@ -16,6 +16,7 @@ import org.apache.spark.mllib.linalg.SparseVector
 import es.udc.graph.utils.GraphUtils
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.log4j.{Level, Logger}
+import breeze.linalg.{DenseVector => BDV}
 
 import sys.process._
 import org.apache.spark.sql.SparkSession
@@ -316,7 +317,7 @@ val timeStart=System.currentTimeMillis();
     var fileNameR=fileName
     if ((method=="lsh") && kNiNeConf.refine)
     {
-      var refinedGraph=graph.map({case (v, listNeighs) => (v, (0, listNeighs))})
+      var refinedGraph=graph.map({case (v, listNeighs) => (v, (BDV.zeros[Int](1), listNeighs))})
       for (i <- 0 until 1)
       {
         println("Refined "+i)
