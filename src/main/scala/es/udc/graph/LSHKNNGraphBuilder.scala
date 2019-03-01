@@ -128,8 +128,12 @@ abstract class LSHKNNGraphBuilder
         var subgraph=getGroupedGraphFromBuckets(data, hashBuckets, numNeighbors, measurer, grouper).coalesce(data.getNumPartitions)
         fullGraph=mergeSubgraphs(fullGraph, subgraph, numNeighbors, measurer).coalesce(data.getNumPartitions)
       }
+      else //DEBUG
+        println("No hash buckets created")
       
-      //TODO - Separable buckets
+      //Separable buckets
+      //println((currentData.first()._1,currentData.first()._2._2))
+      //val interestID=currentData.first()._1
       //Groups elements mapped to the same hash
       var hashSeparableBuckets:RDD[(Hash, Iterable[Long], Iterable[Long])]=hashRDD.filter({case (h,(id,grId,searchesForSelfClass)) => h.values(h.values.size-1)>=0})
                                                                           .map({case (h,(id,grId,searchesForSelfClass)) =>
@@ -139,7 +143,19 @@ abstract class LSHKNNGraphBuilder
                                                                                     (h,(leftPart,rightPart))})
                                                                           .reduceByKey({case ((y1,n1),(y2,n2)) => (y1++y2,n1++n2)})
                                                                           .map({case (k, (y, n)) => (k, (y.toSet, n.toSet))})
-                                                                          .flatMap({case (k, (y, n)) => if ((y.size>1) && (n.size>1)) Some((k, y, n)) else None})
+                                                                          .flatMap({case (k, (y, n)) =>
+                                                                            if ((y.size>0) && (n.size>0))
+                                                                            {
+                                                                              //if (y.contains(interestID) || n.contains(interestID))
+                                                                              //  println("Kept "+k.values(k.values.size-1)+" ["+y.map(_.toString).mkString(",")+"]"+"["+n.map(_.toString).mkString(",")+"]")
+                                                                                Some((k, y, n))
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                              //if (y.contains(interestID) || n.contains(interestID))
+                                                                              //  println("Removed "+k.values(k.values.size-1)+" ["+y.map(_.toString).mkString(",")+"]"+"["+n.map(_.toString).mkString(",")+"]")
+                                                                              None
+                                                                            }})
       val hashSeparableBucketsNotEmpty=(!hashSeparableBuckets.isEmpty())                                                                 
       if (hashSeparableBucketsNotEmpty)
       {
@@ -193,6 +209,8 @@ abstract class LSHKNNGraphBuilder
         for (i<-ofInterest)
           fullGraph.filter(_._1==i).foreach(println)*/
       }
+      else //DEBUG
+        println("No separable hash buckets created")
       
       if (hashBucketsNotEmpty || hashSeparableBucketsNotEmpty)
       {
