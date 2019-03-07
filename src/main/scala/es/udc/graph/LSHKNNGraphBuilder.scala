@@ -72,6 +72,7 @@ abstract class LSHKNNGraphBuilder
     var numBuckets:Long=2
     var allElementsInSingleBucket=false
     var nodesLeft=currentData.count()
+    val bHasher=data.sparkContext.broadcast(hasher)
     
     println(f"Starting $numNeighbors%d-NN graph computation for $nodesLeft%d nodes")
     println(f"\t R0=$radius%g")
@@ -82,15 +83,22 @@ abstract class LSHKNNGraphBuilder
     while(nodesLeft>numNeighbors && nodesLeft>1 && !allElementsInSingleBucket)
     {
       //Maps each element to numTables (hash, index) pairs with hashes of keyLength length.
-      val hashRDD=currentData.flatMap({case (index, (point, specialRequests)) =>
-                                        val hashes=hasher.getHashes(point.features, index, radius)
-                                        val grId=grouper.getGroupId(point)
-                                        if (specialRequests.isEmpty)
-                                          hashes.flatMap({case (h,id) => List[(Hash,(Long,Int,Boolean))]((h.concat(new Hash(Array[Integer](-1))),(id,grId,false)),(h.concat(new Hash(Array[Integer](grouper.getGroupId(point)))),(id,grId,false)))})
-                                        else
-                                          hashes.flatMap({case (h,id) => specialRequests.map({case request => (h.concat(new Hash(Array[Integer](request))),(id,grId,request==grId))}) ++ List[(Hash,(Long,Int,Boolean))]((h.concat(new Hash(Array[Integer](grouper.getGroupId(point)))),(id,grId,false)))})
-                                      })
-                              .coalesce(data.getNumPartitions)
+      val hashRDD=(if (grouper.numGroups==1) //Special case for single group so that the number of hashes is not doubled and no useless separable buckets are created.
+                    currentData.flatMap({case (index, (point, specialRequests)) =>
+                                                    val hashes=bHasher.value.getHashes(point.features, index, radius)
+                                                    val grId=grouper.getGroupId(point)
+                                                    hashes.map({case (h,id) => (h.concat(new Hash(Array[Integer](-1))),(id,grId,false))})
+                                                  })
+                  else
+                    currentData.flatMap({case (index, (point, specialRequests)) =>
+                                                    val hashes=bHasher.value.getHashes(point.features, index, radius)
+                                                    val grId=grouper.getGroupId(point)
+                                                    if (specialRequests.isEmpty)
+                                                      hashes.flatMap({case (h,id) => List[(Hash,(Long,Int,Boolean))]((h.concat(new Hash(Array[Integer](-1))),(id,grId,false)),(h.concat(new Hash(Array[Integer](grouper.getGroupId(point)))),(id,grId,false)))})
+                                                    else
+                                                      hashes.flatMap({case (h,id) => specialRequests.map({case request => (h.concat(new Hash(Array[Integer](request))),(id,grId,request==grId))}) ++ List[(Hash,(Long,Int,Boolean))]((h.concat(new Hash(Array[Integer](grouper.getGroupId(point)))),(id,grId,false)))})
+                                                  })
+                  ).coalesce(data.getNumPartitions)
       
       //TODO Should all distances be computed? Maybe there's no point in computing them if we still don't have enough neighbors for an example
       //Should they be stored/cached? It may be enough to store a boolean that records if they have been computed. LRU Cache?

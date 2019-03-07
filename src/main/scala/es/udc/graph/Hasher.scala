@@ -236,6 +236,7 @@ class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int) extends Hasher
   
   override def getHashes(point:Vector, index:Long, radius:Double):List[(Hash, Long)]=
   {
+    //println(s"DEBUG: Getting $numTables tables of length $keyLength hashes")
     var hashes=List[(Hash, Long)]()
     for(i <- 0 until numTables)
     {
@@ -275,11 +276,14 @@ class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int) extends Hasher
   {
     val t=this
     val bt=data.sparkContext.broadcast(t)
+    //println("DEBUG: Pre hashData flatMap call")
     data.flatMap({ case (index, point) => bt.value.getHashes(point.features, index, radius) });
   }
   def getBucketCount(data:RDD[(Long,LabeledPoint)], radius:Double):(Long,Int)=
   {
+    //println("DEBUG: Pre hashData call")
     val currentHashes = this.hashData(data, radius)
+    //println("DEBUG: Post hashData call")
     //bucketCountBySize is a list of (bucket_size, count) tuples that indicates how many buckets of a given size there are. Count must be >1.
     val bucketCountBySize = currentHashes.aggregateByKey(0)({ case (n, index) => n + 1 }, { case (n1, n2) => n1 + n2 })
                                          .map({ case (h, n) => (n, 1) })
