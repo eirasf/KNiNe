@@ -40,11 +40,6 @@ trait AutotunedHasher extends Hasher
 
 object EuclideanLSHasher extends AutotunedHasher
 {
-  protected final def hashData(data: RDD[(Long, LabeledPoint)], hasher: EuclideanLSHasher, radius: Double): RDD[(Hash, Long)] =
-  {
-    data.flatMap({ case (index, point) => hasher.getHashes(point.features, index, radius) });
-  }
-  
   protected def log2(n: Double): Double =
   {
     Math.log10(n) / Math.log10(2)
@@ -55,8 +50,10 @@ object EuclideanLSHasher extends AutotunedHasher
     val INITIAL_RADIUS=0.1
     val initialData = data//data.sample(false, FRACTION, 56804023).map(_.swap)
     
-    var initialKLength: Int = Math.ceil(log2(data.count() / dimension)).toInt + 1
-    if (initialKLength<1) initialKLength=1
+    val numElems=data.count()
+    var initialKLength: Int = Math.ceil(log2(numElems / dimension)).toInt + 1
+    if (initialKLength<2) initialKLength=2
+    println(s"DEBUG: numElems=$numElems dimension=$dimension initialKLength=$initialKLength")
     val minKLength=if (initialKLength>10) (initialKLength / 2).toInt else 5 
     val maxKLength=if (initialKLength>15) (initialKLength * 1.5).toInt else 22
     val hNTables: Int = Math.floor(Math.pow(log2(dimension), 2)).toInt
@@ -74,7 +71,7 @@ object EuclideanLSHasher extends AutotunedHasher
     {
       val currentLength=Math.floor((leftLimit+rightLimit)/2.0).toInt
       val tmpHasher = new EuclideanLSHasher(dimension, currentLength, hNTables)
-      val (numBuckets,largestBucketSizeSample) = getBucketCount(currentData, tmpHasher, radius)
+      val (numBuckets,largestBucketSizeSample) = tmpHasher.getBucketCount(currentData, radius)
       val largestBucketSize=largestBucketSizeSample///FRACTION
       
       if ((largestBucketSize>=desiredComparisons*MIN_TOLERANCE) && (largestBucketSize<=desiredComparisons*MAX_TOLERANCE))
@@ -144,7 +141,7 @@ object EuclideanLSHasher extends AutotunedHasher
                      var currentValue=leftLimit*2
                      while (!done)
                      {
-                       val (numBuckets, largestBucketSize)=getBucketCount(data, hasher, currentValue)
+                       val (numBuckets, largestBucketSize)=hasher.getBucketCount(data, currentValue)
                        done=largestBucketSize>desiredCount*2
                        println(s"Radius range updated to [$leftLimit - $currentValue] got a largest bucket of $largestBucketSize")
                        if (!done)
@@ -160,7 +157,7 @@ object EuclideanLSHasher extends AutotunedHasher
     while(true)
     {
       val radius=(leftLimit+rightLimit)/2
-      val (numBuckets, largestBucketSize)=getBucketCount(data, hasher, radius)
+      val (numBuckets, largestBucketSize)=hasher.getBucketCount(data, radius)
       println(s"Radius update to $radius [$leftLimit - $rightLimit] got a largest bucket of $largestBucketSize")
       if ((largestBucketSize>=MIN_TOLERANCE*desiredCount) && (largestBucketSize<=MAX_TOLERANCE*desiredCount))
       {
@@ -190,27 +187,6 @@ object EuclideanLSHasher extends AutotunedHasher
       }
     }
     return 1.0//Dummy
-  }
-  
-  def getBucketCount(data:RDD[(Long,LabeledPoint)], hasher:EuclideanLSHasher, radius:Double):(Int,Int)=
-  {
-    val currentHashes = hashData(data, hasher, radius)
-    //bucketCountBySize is a list of (bucket_size, count) tuples that indicates how many buckets of a given size there are. Count must be >1.
-    val bucketCountBySize = currentHashes.aggregateByKey(0)({ case (n, index) => n + 1 }, { case (n1, n2) => n1 + n2 })
-                                         .map({ case (h, n) => (n, 1) })
-                                         .reduceByKey(_ + _)
-                                         .filter({ case (n1, x) => n1 != 1 })
-
-    /*DEBUG
-    bucketCountBySize.sortBy(_._1)
-                      .repartition(1)
-                      .foreach({ case x => println(x._2 + " buckets with " + x._1 + " elements") })
-    */
-
-    
-    val numBuckets = if (bucketCountBySize.isEmpty()) 0 else bucketCountBySize.reduce({ case ((n1, x), (n2, y)) => (n1 + n2, x + y) })._2
-    val largestBucketSize = if (bucketCountBySize.isEmpty()) 0 else bucketCountBySize.map(_._1).max()
-    return (numBuckets, largestBucketSize)
   }
   
   override def getHasherForDataset(data: RDD[(Long,LabeledPoint)], dimension:Int, desiredComparisons:Int):(EuclideanLSHasher,Int,Double)=
@@ -294,5 +270,32 @@ class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int) extends Hasher
       hashes=(new Hash(hash),index) :: hashes
     }
     return hashes
+  }
+  protected final def hashData(data: RDD[(Long, LabeledPoint)], radius: Double): RDD[(Hash, Long)] =
+  {
+    val t=this
+    val bt=data.sparkContext.broadcast(t)
+    data.flatMap({ case (index, point) => bt.value.getHashes(point.features, index, radius) });
+  }
+  def getBucketCount(data:RDD[(Long,LabeledPoint)], radius:Double):(Long,Int)=
+  {
+    val currentHashes = this.hashData(data, radius)
+    //bucketCountBySize is a list of (bucket_size, count) tuples that indicates how many buckets of a given size there are. Count must be >1.
+    val bucketCountBySize = currentHashes.aggregateByKey(0)({ case (n, index) => n + 1 }, { case (n1, n2) => n1 + n2 })
+                                         .map({ case (h, n) => (n, 1) })
+                                         .reduceByKey(_ + _)
+                                         .filter({ case (n1, x) => n1 != 1 })
+
+    /*DEBUG
+    bucketCountBySize.sortBy(_._1)
+                      .repartition(1)
+                      .foreach({ case x => println(x._2 + " buckets with " + x._1 + " elements") })
+    */
+
+    
+    //val numBuckets = if (bucketCountBySize.isEmpty()) 0 else bucketCountBySize.reduce({ case ((n1, x), (n2, y)) => (n1 + n2, x + y) })._2
+    val numBuckets = if (bucketCountBySize.isEmpty()) 0 else bucketCountBySize.map(_._2).sum().toLong
+    val largestBucketSize = if (bucketCountBySize.isEmpty()) 0 else bucketCountBySize.map(_._1).max()
+    return (numBuckets, largestBucketSize)
   }
 }
