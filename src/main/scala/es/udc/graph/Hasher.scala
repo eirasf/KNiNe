@@ -272,7 +272,7 @@ class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int) extends Hasher
     }
     return hashes
   }
-  protected final def hashData(data: RDD[(Long, LabeledPoint)], radius: Double): RDD[(Hash, Long)] =
+  final def hashData(data: RDD[(Long, LabeledPoint)], radius: Double): RDD[(Hash, Long)] =
   {
     val t=this
     val bt=data.sparkContext.broadcast(t)
