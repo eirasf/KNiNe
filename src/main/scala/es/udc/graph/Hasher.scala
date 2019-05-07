@@ -8,6 +8,7 @@ import org.apache.spark.mllib.linalg.DenseVector
 import org.apache.spark.mllib.linalg.SparseVector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.internal.Logging
 
 class Hash(var values: Array[Integer]) extends Serializable
 {
@@ -38,7 +39,7 @@ trait AutotunedHasher extends Hasher
     getHasherForDataset(data, data.map({case (index, point) => point.features.size}).max(), desiredComparisons)
 }
 
-object EuclideanLSHasher extends AutotunedHasher
+object EuclideanLSHasher extends AutotunedHasher with Logging
 {
   protected def log2(n: Double): Double =
   {
@@ -53,7 +54,7 @@ object EuclideanLSHasher extends AutotunedHasher
     val numElems=data.count()
     var initialKLength: Int = Math.ceil(log2(numElems / dimension)).toInt + 1
     if (initialKLength<2) initialKLength=2
-    println(s"DEBUG: numElems=$numElems dimension=$dimension initialKLength=$initialKLength")
+    logDebug(s"DEBUG: numElems=$numElems dimension=$dimension initialKLength=$initialKLength")
     val minKLength=if (initialKLength>10) (initialKLength / 2).toInt else 5 
     val maxKLength=if (initialKLength>15) (initialKLength * 1.5).toInt else 22
     val hNTables: Int = Math.floor(Math.pow(log2(dimension), 2)).toInt
@@ -61,7 +62,7 @@ object EuclideanLSHasher extends AutotunedHasher
     val currentData=initialData
     //val currentData=initialData.sample(false, 0.2, 34652912) //20% of the data usually does the job.
     
-    println(s"Starting hyperparameter adjusting with:\n\tL:$initialKLength\n\tN:$hNTables\n\tR:$INITIAL_RADIUS\n\tC:$desiredComparisons")
+    logDebug(s"Starting hyperparameter adjusting with:\n\tL:$initialKLength\n\tN:$hNTables\n\tR:$INITIAL_RADIUS\n\tC:$desiredComparisons")
     
     var (leftLimit,rightLimit)=(minKLength,maxKLength)
     var radius = INITIAL_RADIUS
@@ -76,7 +77,7 @@ object EuclideanLSHasher extends AutotunedHasher
       
       if ((largestBucketSize>=desiredComparisons*MIN_TOLERANCE) && (largestBucketSize<=desiredComparisons*MAX_TOLERANCE))
       {
-        println(s"Found suitable hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
+        logDebug(s"Found suitable hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
         return (tmpHasher,radius)
       }
       else
@@ -87,7 +88,7 @@ object EuclideanLSHasher extends AutotunedHasher
           {
             if (isRadiusAdjusted)
             {
-              println(s"WARNING! - Had to go with hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
+              logWarning(s"WARNING! - Had to go with hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
               return (tmpHasher,radius)
             }
             //We start over with a larger the radius
@@ -105,7 +106,7 @@ object EuclideanLSHasher extends AutotunedHasher
           {
             if (isRadiusAdjusted)
             {
-              println(s"WARNING! - Had to go with hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
+              logWarning(s"WARNING! - Had to go with hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
               return (tmpHasher,radius)
             }
             //We start over with a smaller the radius
@@ -119,11 +120,12 @@ object EuclideanLSHasher extends AutotunedHasher
         }
         if (rightLimit<=leftLimit)
         {
-          println(s"WARNING! - Had to go with hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
+          logWarning(s"WARNING! - Had to go with hyperparameters:\n\tL:${tmpHasher.keyLength}\n\tN:${tmpHasher.numTables}\n\tR:$radius")
           return (tmpHasher,radius)
         }
       }
       
+      logDebug(s"keyLength update to ${tmpHasher.keyLength} [$leftLimit - $rightLimit] with radius $radius because largestBucket was $largestBucketSize and wanted [${desiredComparisons*MIN_TOLERANCE} - ${desiredComparisons*MAX_TOLERANCE}]")
       println(s"keyLength update to ${tmpHasher.keyLength} [$leftLimit - $rightLimit] with radius $radius because largestBucket was $largestBucketSize and wanted [${desiredComparisons*MIN_TOLERANCE} - ${desiredComparisons*MAX_TOLERANCE}]")
     }
     return (new EuclideanLSHasher(dimension, 1, hNTables), radius)//Dummy
@@ -210,7 +212,7 @@ object EuclideanLSHasher extends AutotunedHasher
   }
 }
 
-class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int) extends Hasher 
+class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int) extends Hasher
 {
   private val OptimalW=4
   val numTables=nTables
