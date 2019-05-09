@@ -26,6 +26,7 @@ class Hash(var values: Array[Integer]) extends Serializable
 
 trait Hasher extends Serializable
 {
+  val DEFAULT_RADIUS=0.1
   def getHashes(point:Vector, index:Long, radius:Double):List[(Hash, Long)]
 }
 
@@ -48,7 +49,7 @@ object EuclideanLSHasher extends AutotunedHasher with Logging
 
   private def computeBestKeyLength(data: RDD[(Long,LabeledPoint)], dimension:Int, desiredComparisons:Int): (EuclideanLSHasher,Double) = {
     val FRACTION=1.0//0.01
-    val INITIAL_RADIUS=0.1
+    val INITIAL_RADIUS=DEFAULT_RADIUS
     val initialData = data//data.sample(false, FRACTION, 56804023).map(_.swap)
     
     val numElems=data.count()
