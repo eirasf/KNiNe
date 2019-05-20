@@ -4,18 +4,24 @@ version := "0.1"
 
 organization := "es.udc"
 
-scalaVersion := "2.10.6"
+scalaVersion := "2.11.11"
+
+val sparkVersion = "2.4.0"
+
+val vegasVersion = "0.3.11"
+
 
 resolvers ++= Seq(
-  "Apache Staging" at "https://repository.apache.org/content/repositories/staging/",
-  "Typesafe" at "http://repo.typesafe.com/typesafe/releases",
-  "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
+  "apache-snapshots" at "http://repository.apache.org/snapshots/"
 )
 
-publishMavenStyle := true
+libraryDependencies ++= Seq(
+  "org.apache.spark" %% "spark-core" % sparkVersion,
+  "org.apache.spark" %% "spark-mllib" % sparkVersion,
+  "org.scalatest" %% "scalatest" % "3.0.5" % "test"
+)
 
-sparkPackageName := "udc/graph-knine"
-
-sparkVersion := "1.6.0"
-
-sparkComponents += "mllib"
+assemblyMergeStrategy in assembly := {
+ case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+ case x => MergeStrategy.first
+}
