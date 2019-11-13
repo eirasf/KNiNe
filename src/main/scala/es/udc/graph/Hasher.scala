@@ -262,7 +262,8 @@ class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int, splitW:Double=4
           {
             //if (indices(k)>=dimension)
             //  break
-            if (indices(k)<dimension)
+        	//TODO - Check if this if is needed or can be removed.
+            //if (indices(k)<dimension)
               dotProd+=values(k) * gaussianVectors(i)(j)(indices(k))
           }
         }
