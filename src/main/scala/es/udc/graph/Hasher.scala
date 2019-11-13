@@ -213,12 +213,11 @@ object EuclideanLSHasher extends AutotunedHasher with Logging
   }
 }
 
-class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int) extends Hasher
+class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int, splitW:Double=4.0) extends Hasher
 {
-  private val OptimalW=4
   val numTables=nTables
   val keyLength=kLength
-  val w=OptimalW
+  val w=splitW
   val dim=dimension
   
   val gaussianVectors=ofDim[Double](numTables, keyLength, dimension)
