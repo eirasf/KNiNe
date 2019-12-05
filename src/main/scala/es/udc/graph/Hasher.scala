@@ -217,7 +217,7 @@ class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int, splitW:Double=4
 {
   val numTables=nTables
   val keyLength=kLength
-  val w=splitW
+  var w=splitW
   val dim=dimension
   
   val gaussianVectors=ofDim[Double](numTables, keyLength, dimension)
@@ -268,7 +268,7 @@ class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int, splitW:Double=4
           }
         }
         dotProd/=radius
-        hash(j)=math.floor((dotProd + b(i)(j))/w).toInt
+        hash(j)=math.round((dotProd + b(i)(j))/w).toInt
       }
       hash(keyLength)=i//Add the number of table to the end of the hash to avoid collisions with hashes from other tables.
       hashes=(new Hash(hash),index) :: hashes
