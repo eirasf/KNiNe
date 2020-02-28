@@ -150,16 +150,16 @@ abstract class LSHKNNGraphBuilder extends GraphBuilder
                     currentData.flatMap({case (index, (point, specialRequests)) =>
                                                     val hashes=bHasher.value.getHashes(point.features, index, radius)
                                                     val grId=grouper.getGroupId(point)
-                                                    hashes.map({case (h,id) => (h.concat(new Hash(Array[Integer](-1))),(id,grId,false))})
+                                                    hashes.map({case (h,id) => (h.concat(new Hash(Array[Int](-1))),(id,grId,false))})
                                                   })
                   else
                     currentData.flatMap({case (index, (point, specialRequests)) =>
                                                     val hashes=bHasher.value.getHashes(point.features, index, radius)
                                                     val grId=grouper.getGroupId(point)
                                                     if (specialRequests.isEmpty)
-                                                      hashes.flatMap({case (h,id) => List[(Hash,(Long,Int,Boolean))]((h.concat(new Hash(Array[Integer](-1))),(id,grId,false)),(h.concat(new Hash(Array[Integer](grouper.getGroupId(point)))),(id,grId,false)))})
+                                                      hashes.flatMap({case (h,id) => List[(Hash,(Long,Int,Boolean))]((h.concat(new Hash(Array[Int](-1))),(id,grId,false)),(h.concat(new Hash(Array[Int](grouper.getGroupId(point)))),(id,grId,false)))})
                                                     else
-                                                      hashes.flatMap({case (h,id) => specialRequests.map({case request => (h.concat(new Hash(Array[Integer](request))),(id,grId,request==grId))}) ++ List[(Hash,(Long,Int,Boolean))]((h.concat(new Hash(Array[Integer](grouper.getGroupId(point)))),(id,grId,false)))})
+                                                      hashes.flatMap({case (h,id) => specialRequests.map({case request => (h.concat(new Hash(Array[Int](request))),(id,grId,request==grId))}) ++ List[(Hash,(Long,Int,Boolean))]((h.concat(new Hash(Array[Int](grouper.getGroupId(point)))),(id,grId,false)))})
                                                   })
                   ).coalesce(data.getNumPartitions)
       

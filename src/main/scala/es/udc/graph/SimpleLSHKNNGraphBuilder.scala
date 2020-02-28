@@ -56,7 +56,8 @@ abstract class SimpleLSHKNNGraphBuilder extends GraphBuilder
   def computeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, hasherKeyLength:Int, hasherNumTables:Int, measurer:DistanceProvider, blockSz:Option[Int]):RDD[(Long, List[(Long, Double)])]
             =computeGraph(data,
                            numNeighbors,
-                           if (blockSz.isDefined) new EuclideanProjectedLSHasher(data.map({case (index, point) => point.features.size}).max(), hasherKeyLength, hasherNumTables, blockSz.get)
+                           //if (blockSz.isDefined) new EuclideanProjectedLSHasher(data.map({case (index, point) => point.features.size}).max(), hasherKeyLength, hasherNumTables, blockSz.get)
+                           if (blockSz.isDefined) new PrecomputedProjectedLSHasher(hasherKeyLength, blockSz.get)
                            else new EuclideanLSHasher(data.map({case (index, point) => point.features.size}).max(), hasherKeyLength, hasherNumTables),//Get dimension from dataset
                            measurer)
                                                                                            

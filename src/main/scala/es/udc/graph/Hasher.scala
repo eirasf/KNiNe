@@ -10,7 +10,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.internal.Logging
 
-class Hash(var values: Array[Integer]) extends Serializable
+class Hash(var values: Array[Int]) extends Serializable
 {
     override val hashCode = values.deep.hashCode
     override def equals(obj:Any) = obj.isInstanceOf[Hash] && obj.asInstanceOf[Hash].values.deep == this.values.deep
@@ -250,7 +250,7 @@ class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int, splitW:Double=4
     var hashes=List[(Hash, Long)]()
     for(i <- 0 until numTables)
     {
-      val hash=new Array[Integer](keyLength+1)
+      val hash=new Array[Int](keyLength+1)
       for (j <- 0 until keyLength)
       {
         var dotProd:Double=0
@@ -339,6 +339,55 @@ class EuclideanProjectedLSHasher(dimension:Int, kLength:Int, nTables:Int, blockS
     val bt=data.sparkContext.broadcast(t)
     //println("DEBUG: Pre hashData flatMap call")
     val hashes=data.flatMap({ case (index, point) => bt.value.getHashes(point.features, index, radius) });
+    
+    return hashes.map({case (h,id) =>
+                        (h.values.zip(w).map({case (hi,wi) => hi*wi}).sum,id)})
+                        .sortBy(_._1)
+                        .zipWithIndex
+                        .map({case ((proj,id),pos) => (new Hash(Array((pos/blockSz.toLong).toInt)),id)})
+  }
+}
+
+class PrecomputedProjectedLSHasher(kLength:Int, blockSz:Int) extends Hasher
+{
+  val w=ofDim[Double](kLength+1)
+  
+  protected def _init():Unit=
+  {
+    val randomGenerator=new Random()
+    for (j <- 0 until kLength)
+      w(j)=randomGenerator.nextGaussian()
+  }
+  this._init()
+  
+  //Should not be used directly. This is poorly structured, but it is just a quick hack to get SimpleLSHKNNGraphBuilder working.
+  override def getHashes(point:Vector, index:Long, radius:Double):List[(Hash, Long)]=
+  {
+    return List() //Workaround
+  }
+  
+  private def toBinary(n:Int):Array[Int]=
+  {
+    val v=Array.fill(kLength)(0)
+    var rest=n
+    for (i <- kLength-1 to 0 by -1)
+    {
+      val p=math.pow(2, i).toInt
+      if (rest>=p)
+      {
+        v(i)=1
+        rest=rest-p
+      }
+    }
+    return v
+  }
+  
+  final override def hashData(data: RDD[(Long, LabeledPoint)], radius: Double): RDD[(Hash, Long)] =
+  {
+    val t=this
+    val bt=data.sparkContext.broadcast(t)
+    //println("DEBUG: Pre hashData flatMap call")
+    val hashes=data.flatMap({ case (index, point) => List((new Hash(toBinary(point.label.toInt)), index)) });
     
     return hashes.map({case (h,id) =>
                         (h.values.zip(w).map({case (hi,wi) => hi*wi}).sum,id)})
