@@ -99,6 +99,7 @@ Options:
     -c    File containing the graph to compare to (default: nothing)
     -p    Number of partitions for the data RDDs (default: """+KNiNe.DEFAULT_NUM_PARTITIONS+""")
     -s    Skip graph refinement (LSH only) (default: false)
+    -x    Simple non-iterative fixed resolution version (default:false)
 
 Advanced LSH options:
     -n    Number of hashes per item (default: auto)
@@ -138,6 +139,7 @@ Advanced LSH options:
           case "c"   => "compare"
           case "p"   => "num_partitions"
           case "s"   => "refine"
+          case "x"   => "fixed-resolution"
           case somethingElse => readOptionName
         }
       if (!m.keySet.exists(_==option) && option==readOptionName)
@@ -157,8 +159,16 @@ Advanced LSH options:
       }
       else
       {
-        if (option=="refine")
-          m("refine")=false
+        if ((option=="refine") || (option=="fixed-resolution"))
+        {
+          if (option=="fixed-resolution")
+          {
+            m("fixed-resolution")=true
+            m("refine")=true
+          }
+          else
+            m("refine")=false //This option skips refining
+        }
         else
         {
           if (option=="compare")
@@ -168,7 +178,7 @@ Advanced LSH options:
         }
       }
       
-      if (option!="refine")
+      if ((option!="refine") && (option!="fixed-resolution"))
         i=i+2
       else
         i=i+1
@@ -258,26 +268,32 @@ Advanced LSH options:
     
     
 val timeStart=System.currentTimeMillis();
-    var builder:LSHLookupKNNGraphBuilder=null
-    val (graph,lookup)=if (method=="lsh")
+    var builder:GraphBuilder=null
+    val (graph,lookup)=if (options.contains("fixed-resolution"))
                         {
-                            /* LOOKUP VERSION */
-                            builder=new LSHLookupKNNGraphBuilder(data)
-                            if (kNiNeConf.keyLength.isDefined && kNiNeConf.numTables.isDefined)
-                              (builder.computeGraph(data, numNeighbors, kNiNeConf.keyLength.get, kNiNeConf.numTables.get, kNiNeConf.radius0, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.lookup)
-                            else
-                            {
-                              //val cMax=if (kNiNeConf.maxComparisons>0) kNiNeConf.maxComparisons else 250
-                              val cMax=if (kNiNeConf.maxComparisons.isDefined) math.max(kNiNeConf.maxComparisons.get,numNeighbors) else math.max(128,10*numNeighbors)
-                              //val factor=if (options.contains("fast")) 4.0 else 0.8
-                              val factor=2.0
-                              val (hasher,nComps,suggestedRadius)=EuclideanLSHasher.getHasherForDataset(data, (cMax*factor).toInt) //Make constant size buckets
-                              (builder.computeGraph(data, numNeighbors, hasher, Some(suggestedRadius), Some(cMax.toInt), new EuclideanDistanceProvider()),builder.lookup)
-                            }
+                          builder=new SimpleLSHLookupKNNGraphBuilder(data)
+                          (builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].computeGraph(data, numNeighbors, kNiNeConf.keyLength.get, kNiNeConf.numTables.get, new EuclideanDistanceProvider(), Some(1000)),builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].lookup)
                         }
                         else
-                          /* BRUTEFORCE VERSION */
-                          BruteForceKNNGraphBuilder.parallelComputeGraph(data, numNeighbors, numPartitions)
+                          if (method=="lsh")
+                          {
+                              /* LOOKUP VERSION */
+                              builder=new LSHLookupKNNGraphBuilder(data)
+                              if (kNiNeConf.keyLength.isDefined && kNiNeConf.numTables.isDefined)
+                                (builder.asInstanceOf[LSHLookupKNNGraphBuilder].computeGraph(data, numNeighbors, kNiNeConf.keyLength.get, kNiNeConf.numTables.get, kNiNeConf.radius0, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.asInstanceOf[LSHLookupKNNGraphBuilder].lookup)
+                              else
+                              {
+                                //val cMax=if (kNiNeConf.maxComparisons>0) kNiNeConf.maxComparisons else 250
+                                val cMax=if (kNiNeConf.maxComparisons.isDefined) math.max(kNiNeConf.maxComparisons.get,numNeighbors) else math.max(128,10*numNeighbors)
+                                //val factor=if (options.contains("fast")) 4.0 else 0.8
+                                val factor=2.0
+                                val (hasher,nComps,suggestedRadius)=EuclideanLSHasher.getHasherForDataset(data, (cMax*factor).toInt) //Make constant size buckets
+                                (builder.asInstanceOf[LSHLookupKNNGraphBuilder].computeGraph(data, numNeighbors, hasher, Some(suggestedRadius), Some(cMax.toInt), new EuclideanDistanceProvider()),builder.asInstanceOf[LSHLookupKNNGraphBuilder].lookup)
+                              }
+                          }
+                          else
+                            /* BRUTEFORCE VERSION */
+                            BruteForceKNNGraphBuilder.parallelComputeGraph(data, numNeighbors, numPartitions)
     
     //Print graph
     /*println("There goes the graph:")
@@ -293,7 +309,7 @@ val timeStart=System.currentTimeMillis();
     //var counted=edges.map({case x=>(x._1,1)}).reduceByKey(_+_).sortBy(_._1)
     //var forCount=counted.map(_._2)
                           
-    var countEdges=graph.map({case (index, neighbors) => neighbors.size}).sum
+    var countEdges=graph.map({case (index, neighbors) => neighbors.toSet.size}).sum
     println("Obtained "+countEdges+" edges for "+graph.count()+" nodes in "+(System.currentTimeMillis()-timeStart)+" milliseconds")
     
     
@@ -315,16 +331,16 @@ val timeStart=System.currentTimeMillis();
       edges.saveAsTextFile(fileName)
     }
     var fileNameR=fileName
-    if ((method=="lsh") && kNiNeConf.refine)
+    if ((method!="brute") && kNiNeConf.refine)
     {
       var refinedGraph=graph.map({case (v, listNeighs) => (v, (BDV.zeros[Int](1), listNeighs))})
       for (i <- 0 until 1)
       {
         println("Refined "+i)
-        val timeStartR=System.currentTimeMillis();          
-          refinedGraph=builder.refineGraph(data, refinedGraph, numNeighbors, new EuclideanDistanceProvider())
-          fileNameR=fileName+"refined"+i
-          val edgesR=refinedGraph.flatMap({case (index, (c,neighbors)) =>
+        val timeStartR=System.currentTimeMillis();
+        refinedGraph=builder.refineGraph(data, refinedGraph, numNeighbors, new EuclideanDistanceProvider())
+        fileNameR=fileName+"refined"+i
+        val edgesR=refinedGraph.flatMap({case (index, (c,neighbors)) =>
                                                    neighbors.map({case (destination, distance) =>
                                                                          (index, destination, distance)}).toSet})
         val totalElements=data.count()
@@ -342,7 +358,8 @@ val timeStart=System.currentTimeMillis();
       //CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
       
       //Compare refined with ground truth
-      CompareGraphs.printResults(CompareGraphs.compare(compareFile, fileNameR, None))
+      if (fileName!=fileNameR)
+        CompareGraphs.printResults(CompareGraphs.compare(compareFile, fileNameR, None))
       //CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
           
       /* //DEBUG - Show how the graph has improved

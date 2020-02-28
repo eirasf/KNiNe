@@ -28,6 +28,7 @@ trait Hasher extends Serializable
 {
   val DEFAULT_RADIUS=0.1
   def getHashes(point:Vector, index:Long, radius:Double):List[(Hash, Long)]
+  def hashData(data: RDD[(Long, LabeledPoint)], radius: Double): RDD[(Hash, Long)]
 }
 
 trait AutotunedHasher extends Hasher
@@ -211,6 +212,13 @@ object EuclideanLSHasher extends AutotunedHasher with Logging
   {
     return List() //Workaround
   }
+  
+  override def hashData(data: RDD[(Long, LabeledPoint)], radius: Double): RDD[(Hash, Long)] =
+  {
+    val t=this
+    val bt=data.sparkContext.broadcast(t)
+    return data.flatMap({ case (index, point) => bt.value.getHashes(point.features, index, radius) });
+  }
 }
 
 class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int, splitW:Double=4.0) extends Hasher
@@ -304,5 +312,38 @@ class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int, splitW:Double=4
     val numBuckets = if (bucketCountBySize.isEmpty()) 0 else bucketCountBySize.map(_._2).sum().toLong
     val largestBucketSize = if (bucketCountBySize.isEmpty()) 0 else bucketCountBySize.map(_._1).max()
     return (numBuckets, largestBucketSize)
+  }
+}
+
+class EuclideanProjectedLSHasher(dimension:Int, kLength:Int, nTables:Int, blockSz:Int) extends Hasher
+{
+  val underlyingHasher=new EuclideanLSHasher(dimension, kLength, nTables)
+  val w=ofDim[Double](kLength+1)
+  
+  protected def _init():Unit=
+  {
+    val randomGenerator=new Random()
+    for (j <- 0 until underlyingHasher.keyLength)
+      w(j)=randomGenerator.nextGaussian()
+  }
+  this._init()
+  
+  //Should not be used directly. This is poorly structured, but it is just a quick hack to get SimpleLSHKNNGraphBuilder working.
+  override def getHashes(point:Vector, index:Long, radius:Double):List[(Hash, Long)]=
+  {
+    return underlyingHasher.getHashes(point, index, radius)
+  }
+  final override def hashData(data: RDD[(Long, LabeledPoint)], radius: Double): RDD[(Hash, Long)] =
+  {
+    val t=this
+    val bt=data.sparkContext.broadcast(t)
+    //println("DEBUG: Pre hashData flatMap call")
+    val hashes=data.flatMap({ case (index, point) => bt.value.getHashes(point.features, index, radius) });
+    
+    return hashes.map({case (h,id) =>
+                        (h.values.zip(w).map({case (hi,wi) => hi*wi}).sum,id)})
+                        .sortBy(_._1)
+                        .zipWithIndex
+                        .map({case ((proj,id),pos) => (new Hash(Array((pos/blockSz.toLong).toInt)),id)})
   }
 }
