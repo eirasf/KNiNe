@@ -68,13 +68,13 @@ object KNiNeConfiguration
                          Some(options("max_comparisons").asInstanceOf[Double].toInt)
                        else
                          None
-    return new KNiNeConfiguration(numTables, keyLength, maxComparisons, radius0, options("refine").asInstanceOf[Boolean])
+    return new KNiNeConfiguration(numTables, keyLength, maxComparisons, radius0, options("refine").asInstanceOf[Int])
   }
 }
 
-class KNiNeConfiguration(val numTables:Option[Int], val keyLength:Option[Int], val maxComparisons:Option[Int], val radius0:Option[Double], val refine:Boolean)
+class KNiNeConfiguration(val numTables:Option[Int], val keyLength:Option[Int], val maxComparisons:Option[Int], val radius0:Option[Double], val refine:Int)
 {
-  def this() = this(None, None, None, None, false)
+  def this() = this(None, None, None, None, KNiNe.DEFAULT_REFINEMENT)
   override def toString():String=
   {
     return "R0="+this.radius0+";NT="+this.numTables+";KL="+this.keyLength+";MC="+this.maxComparisons+";Refine="+this.refine
@@ -85,6 +85,7 @@ object KNiNe
 {
   val DEFAULT_METHOD="lsh"
   val DEFAULT_K=10
+  val DEFAULT_REFINEMENT=1
   val DEFAULT_NUM_PARTITIONS:Double=512
   
   def showUsageAndExit()=
@@ -98,7 +99,7 @@ Options:
     -t    Maximum comparisons per item (default: auto)
     -c    File containing the graph to compare to (default: nothing)
     -p    Number of partitions for the data RDDs (default: """+KNiNe.DEFAULT_NUM_PARTITIONS+""")
-    -s    Skip graph refinement (LSH only) (default: false)
+    -d    Number of refinement (descent) steps (LSH only) (default: """+KNiNe.DEFAULT_REFINEMENT+""")
     -x    Simple non-iterative fixed resolution version (default:false)
 
 Advanced LSH options:
@@ -112,7 +113,7 @@ Advanced LSH options:
                                                     "method" -> KNiNe.DEFAULT_METHOD,
                                                     "radius_start" -> LSHKNNGraphBuilder.DEFAULT_RADIUS_START,
                                                     "num_partitions" -> KNiNe.DEFAULT_NUM_PARTITIONS,
-                                                    "refine" -> true)
+                                                    "refine" -> KNiNe.DEFAULT_REFINEMENT)
     if (p.length<=1)
       showUsageAndExit()
     
@@ -138,7 +139,7 @@ Advanced LSH options:
           case "t"   => "max_comparisons"
           case "c"   => "compare"
           case "p"   => "num_partitions"
-          case "s"   => "refine"
+          case "d"   => "refine"
           case "x"   => "fixed-resolution"
           case somethingElse => readOptionName
         }
@@ -159,26 +160,21 @@ Advanced LSH options:
       }
       else
       {
-        if ((option=="refine") || (option=="fixed-resolution"))
-        {
-          if (option=="fixed-resolution")
-          {
-            m("fixed-resolution")=true
-            m("refine")=true
-          }
-          else
-            m("refine")=false //This option skips refining
-        }
+        if (option=="fixed-resolution")
+          m("fixed-resolution")=true
         else
         {
           if (option=="compare")
             m(option)=p(i+1)
           else
-            m(option)=p(i+1).toDouble
+            if (option=="refine")
+              m(option)=p(i+1).toInt
+            else
+              m(option)=p(i+1).toDouble
         }
       }
       
-      if ((option!="refine") && (option!="fixed-resolution"))
+      if (option!="fixed-resolution")
         i=i+2
       else
         i=i+1
@@ -331,10 +327,10 @@ val timeStart=System.currentTimeMillis();
       edges.saveAsTextFile(fileName)
     }
     var fileNameR=fileName
-    if ((method!="brute") && kNiNeConf.refine)
+    if (method!="brute")
     {
       var refinedGraph=graph.map({case (v, listNeighs) => (v, (BDV.zeros[Int](1), listNeighs))})
-      for (i <- 0 until 1)
+      for (i <- 0 until kNiNeConf.refine)
       {
         println("Refined "+i)
         val timeStartR=System.currentTimeMillis();
