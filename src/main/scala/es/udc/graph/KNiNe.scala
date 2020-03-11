@@ -45,7 +45,7 @@ object sparkContextSingleton
       instance = SparkContext.getOrCreate(conf)//new SparkContext(conf)
     instance*/
     spark.sparkContext
-  }  
+  }
 }
 
 object KNiNeConfiguration
@@ -87,7 +87,7 @@ object KNiNe
   val DEFAULT_K=10
   val DEFAULT_REFINEMENT=1
   val DEFAULT_NUM_PARTITIONS:Double=512
-  
+
   def showUsageAndExit()=
   {
     println("""Usage: KNiNe dataset output_file [options]
@@ -116,10 +116,10 @@ Advanced LSH options:
                                                     "refine" -> KNiNe.DEFAULT_REFINEMENT)
     if (p.length<=1)
       showUsageAndExit()
-    
+
     m("dataset")=p(0)
     m("output")=p(1)
-    
+
     var i=2
     while (i < p.length)
     {
@@ -173,7 +173,7 @@ Advanced LSH options:
               m(option)=p(i+1).toDouble
         }
       }
-      
+
       if (option!="fixed-resolution")
         i=i+2
       else
@@ -188,11 +188,11 @@ Advanced LSH options:
       showUsageAndExit()
       return
     }
-    
+
     val options=parseParams(args)
-    
+
     val datasetFile=options("dataset").asInstanceOf[String]
-    
+
     val fileParts=datasetFile.split("/")
     var justFileName=fileParts(fileParts.length-1).split("\\.")(0)
 //val file="/home/eirasf/Escritorio/kNNTEMP/car-dopado.libsvm"
@@ -203,24 +203,24 @@ Advanced LSH options:
                  "libsvm"
                else
                  "text"
-    
+
     val compareFile=if (options.exists(_._1=="compare"))
                       options("compare").asInstanceOf[String]
                     else
                       null
-                 
+
     val kNiNeConf=KNiNeConfiguration.getConfigurationFromOptions(options)
-                 
+
     //println("Using "+method+" to compute "+numNeighbors+"NN graph for dataset "+justFileName)
     //println("R0:"+radius0+(if (numTables!=null)" num_tables:"+numTables else "")+(if (keyLength!=null)" keyLength:"+keyLength else "")+(if (maxComparisons!=null)" maxComparisons:"+maxComparisons else ""))
-    
+
     //Set up Spark Context
     val sc=sparkContextSingleton.getInstance()
     println(s"Default parallelism: ${sc.defaultParallelism}")
     //Stop annoying INFO messages
     val rootLogger = Logger.getRootLogger()
     rootLogger.setLevel(Level.WARN)
-    
+
     //Load data from file
     val data: RDD[(Long,LabeledPoint)] = (if (format=="libsvm")
                                             MLUtils.loadLibSVMFile(sc, datasetFile).zipWithIndex().map(_.swap)
@@ -231,7 +231,7 @@ Advanced LSH options:
                                                                   (values(0).toLong-1, new LabeledPoint(0.0, Vectors.dense(values.slice(1, values.length).map { x => x.toDouble })))
                                                         })
                                           }).partitionBy(new HashPartitioner(numPartitions))
-    
+
     /* DATASET INSPECTION - DEBUG
     val summary=data.map({case x => (x._1.features.toArray,x._1.features.toArray,x._1.features.toArray)}).reduce({case ((as,aM,am),(bs,bM,bm)) => (as.zip(bs).map({case (ea,eb) => ea+eb}),aM.zip(bM).map({case (ea,eb) => Math.max(ea,eb)}),am.zip(bm).map({case (ea,eb) => Math.min(ea,eb)}))})
     val total=data.count()
@@ -246,23 +246,23 @@ Advanced LSH options:
     println(stddevs.sum/stddevs.length)
     System.exit(0)
     */
-    
+
     //val n=data.count()
     //println("Dataset has "+n+" elements")
-    
-    /* GRAPH VERSION 
-    
+
+    /* GRAPH VERSION
+
     val graph=LSHGraphXKNNGraphBuilder.getGraph(data, numNeighbors, dimension)
     println("There goes the graph:")
     graph.foreach(println(_))
-    
+
     */
-    
-    
+
+
     //EuclideanLSHasher.getBucketCount(data.map(_.swap), hasher, radius)
     //System.exit(0)
-    
-    
+
+
 val timeStart=System.currentTimeMillis();
     var builder:GraphBuilder=null
     val (graph,lookup)=if (options.contains("fixed-resolution"))
@@ -290,7 +290,7 @@ val timeStart=System.currentTimeMillis();
                           else
                             /* BRUTEFORCE VERSION */
                             BruteForceKNNGraphBuilder.parallelComputeGraph(data, numNeighbors, numPartitions)
-    
+
     //Print graph
     /*println("There goes the graph:")
     graph.foreach({case (elementIndex, neighbors) =>
@@ -298,18 +298,18 @@ val timeStart=System.currentTimeMillis();
                       println(elementIndex+"->"+n._1+"("+n._2+")")
                   })
     */
-                
+
     //
-    
+
     //DEBUG
     //var counted=edges.map({case x=>(x._1,1)}).reduceByKey(_+_).sortBy(_._1)
     //var forCount=counted.map(_._2)
-                          
+
     var countEdges=graph.map({case (index, neighbors) => neighbors.toSet.size}).sum
     println("Obtained "+countEdges+" edges for "+graph.count()+" nodes in "+(System.currentTimeMillis()-timeStart)+" milliseconds")
-    
-    
-     
+
+
+
     //Save to file
     var fileName=options("output").asInstanceOf[String]
     var fileNameOriginal=fileName
@@ -323,7 +323,7 @@ val timeStart=System.currentTimeMillis();
         i=i+1
         fileName=fileNameOriginal+"-"+i
       }
-      val edges=graph.flatMap({case (index, neighbors) => neighbors.map({case (destination, distance) => (index, destination, distance)}).toSet})
+      val edges=graph.flatMap({case (index, neighbors) => neighbors.map({case (destination, distance) => (index, destination, math.sqrt(distance))}).toSet})
       edges.saveAsTextFile(fileName)
     }
     var fileNameR=fileName
@@ -338,11 +338,11 @@ val timeStart=System.currentTimeMillis();
         fileNameR=fileName+"refined"+i
         val edgesR=refinedGraph.flatMap({case (index, (c,neighbors)) =>
                                                    neighbors.map({case (destination, distance) =>
-                                                                         (index, destination, distance)}).toSet})
+                                                                         (index, destination, math.sqrt(distance))}).toSet})
         val totalElements=data.count()
         val e=edgesR.first()
         println("Added "+(System.currentTimeMillis()-timeStartR)+" milliseconds")
-        
+
         if (!skipSave)
           edgesR.saveAsTextFile(fileNameR)
       }
@@ -352,12 +352,12 @@ val timeStart=System.currentTimeMillis();
       //Compare with ground truth
       CompareGraphs.printResults(CompareGraphs.compare(compareFile, fileName, None))
       //CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
-      
+
       //Compare refined with ground truth
       if (fileName!=fileNameR)
         CompareGraphs.printResults(CompareGraphs.compare(compareFile, fileNameR, None))
       //CompareGraphs.comparePositions(compareFile.replace(numNeighbors+"", "128"), fileName)
-          
+
       /* //DEBUG - Show how the graph has improved
       firstComparison.join(secondComparison)
                      .flatMap({case (element,((a,b,furthest,list), (a2,b2,furthest2,list2))) => if (b!=b2 || list!=list2)
@@ -368,7 +368,7 @@ val timeStart=System.currentTimeMillis();
                      .foreach(println(_))
       */
     }
-    
+
     //Stop the Spark Context
     sc.stop()
   }
