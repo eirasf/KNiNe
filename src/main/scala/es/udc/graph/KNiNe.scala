@@ -68,13 +68,17 @@ object KNiNeConfiguration
                          Some(options("max_comparisons").asInstanceOf[Double].toInt)
                        else
                          None
-    return new KNiNeConfiguration(numTables, keyLength, maxComparisons, radius0, options("refine").asInstanceOf[Int])
+    val blockSz=if (options.exists(_._1=="blocksz"))
+                         options("blocksz").asInstanceOf[Double].toInt
+                       else
+                         KNiNe.DEFAULT_BLOCKSZ
+    return new KNiNeConfiguration(numTables, keyLength, maxComparisons, radius0, options("refine").asInstanceOf[Int], blockSz)
   }
 }
 
-class KNiNeConfiguration(val numTables:Option[Int], val keyLength:Option[Int], val maxComparisons:Option[Int], val radius0:Option[Double], val refine:Int)
+class KNiNeConfiguration(val numTables:Option[Int], val keyLength:Option[Int], val maxComparisons:Option[Int], val radius0:Option[Double], val refine:Int, val blockSz:Int)
 {
-  def this() = this(None, None, None, None, KNiNe.DEFAULT_REFINEMENT)
+  def this() = this(None, None, None, None, KNiNe.DEFAULT_REFINEMENT, KNiNe.DEFAULT_BLOCKSZ)
   override def toString():String=
   {
     return "R0="+this.radius0+";NT="+this.numTables+";KL="+this.keyLength+";MC="+this.maxComparisons+";Refine="+this.refine
@@ -87,6 +91,7 @@ object KNiNe
   val DEFAULT_K=10
   val DEFAULT_REFINEMENT=1
   val DEFAULT_NUM_PARTITIONS:Double=512
+  val DEFAULT_BLOCKSZ:Int=100
 
   def showUsageAndExit()=
   {
@@ -94,13 +99,13 @@ object KNiNe
     Dataset must be a libsvm or text file
 Options:
     -k    Number of neighbors (default: """+KNiNe.DEFAULT_K+""")
-    -m    Method used to compute the graph. Valid values: lsh, brute (default: """+KNiNe.DEFAULT_METHOD+""")
+    -m    Method used to compute the graph. Valid values: lsh, brute, fastKNN-proj, fastKNN-AGH (default: """+KNiNe.DEFAULT_METHOD+""")
     -r    Starting radius (default: """+LSHKNNGraphBuilder.DEFAULT_RADIUS_START+""")
     -t    Maximum comparisons per item (default: auto)
     -c    File containing the graph to compare to (default: nothing)
     -p    Number of partitions for the data RDDs (default: """+KNiNe.DEFAULT_NUM_PARTITIONS+""")
     -d    Number of refinement (descent) steps (LSH only) (default: """+KNiNe.DEFAULT_REFINEMENT+""")
-    -x    Simple non-iterative fixed resolution version (default:false)
+    -b    blockSz (fastKNN only) (default: """+KNiNe.DEFAULT_BLOCKSZ+""")
 
 Advanced LSH options:
     -n    Number of hashes per item (default: auto)
@@ -140,7 +145,7 @@ Advanced LSH options:
           case "c"   => "compare"
           case "p"   => "num_partitions"
           case "d"   => "refine"
-          case "x"   => "fixed-resolution"
+          case "b"   => "blocksz"
           case somethingElse => readOptionName
         }
       if (!m.keySet.exists(_==option) && option==readOptionName)
@@ -150,7 +155,7 @@ Advanced LSH options:
       }
       if (option=="method")
       {
-        if (p(i+1)=="lsh" || p(i+1)=="brute")
+        if (p(i+1)=="lsh" || p(i+1)=="brute" || p(i+1)=="fastKNN-proj" || p(i+1)=="fastKNN-AGH")
           m(option)=p(i+1)
         else
         {
@@ -160,24 +165,16 @@ Advanced LSH options:
       }
       else
       {
-        if (option=="fixed-resolution")
-          m("fixed-resolution")=true
+        if (option=="compare")
+          m(option)=p(i+1)
         else
-        {
-          if (option=="compare")
-            m(option)=p(i+1)
+          if (option=="refine")
+            m(option)=p(i+1).toInt
           else
-            if (option=="refine")
-              m(option)=p(i+1).toInt
-            else
-              m(option)=p(i+1).toDouble
-        }
+            m(option)=p(i+1).toDouble
       }
 
-      if (option!="fixed-resolution")
-        i=i+2
-      else
-        i=i+1
+      i=i+2
     }
     return m.toMap
   }
@@ -265,31 +262,35 @@ Advanced LSH options:
 
 val timeStart=System.currentTimeMillis();
     var builder:GraphBuilder=null
-    val (graph,lookup)=if (options.contains("fixed-resolution"))
-                        {
-                          builder=new SimpleLSHLookupKNNGraphBuilder(data)
-                          (builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].computeGraph(data, numNeighbors, kNiNeConf.keyLength.get, kNiNeConf.numTables.get, new EuclideanDistanceProvider(), Some(1000)),builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].lookup)
-                        }
-                        else
-                          if (method=="lsh")
-                          {
-                              /* LOOKUP VERSION */
-                              builder=new LSHLookupKNNGraphBuilder(data)
-                              if (kNiNeConf.keyLength.isDefined && kNiNeConf.numTables.isDefined)
-                                (builder.asInstanceOf[LSHLookupKNNGraphBuilder].computeGraph(data, numNeighbors, kNiNeConf.keyLength.get, kNiNeConf.numTables.get, kNiNeConf.radius0, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.asInstanceOf[LSHLookupKNNGraphBuilder].lookup)
-                              else
-                              {
-                                //val cMax=if (kNiNeConf.maxComparisons>0) kNiNeConf.maxComparisons else 250
-                                val cMax=if (kNiNeConf.maxComparisons.isDefined) math.max(kNiNeConf.maxComparisons.get,numNeighbors) else math.max(128,10*numNeighbors)
-                                //val factor=if (options.contains("fast")) 4.0 else 0.8
-                                val factor=2.0
-                                val (hasher,nComps,suggestedRadius)=EuclideanLSHasher.getHasherForDataset(data, (cMax*factor).toInt) //Make constant size buckets
-                                (builder.asInstanceOf[LSHLookupKNNGraphBuilder].computeGraph(data, numNeighbors, hasher, Some(suggestedRadius), Some(cMax.toInt), new EuclideanDistanceProvider()),builder.asInstanceOf[LSHLookupKNNGraphBuilder].lookup)
-                              }
-                          }
-                          else
-                            /* BRUTEFORCE VERSION */
-                            BruteForceKNNGraphBuilder.parallelComputeGraph(data, numNeighbors, numPartitions)
+    val (graph,lookup)=method match
+            {
+              case "fastKNN-AGH" =>
+                  println(s"Method: fastKNN with AGH (must be precomputed on dataset labels) as LSH. BlockSz=${kNiNeConf.blockSz}")
+                  builder=new SimpleLSHLookupKNNGraphBuilder(data)
+                  (builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].computeGraph(data, numNeighbors, 0, 0, new EuclideanDistanceProvider(), Some(kNiNeConf.blockSz), true),builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].lookup)
+              case "fastKNN-proj" =>
+                println(s"Method: fastKNN with random projections as LSH. BlockSz=${kNiNeConf.blockSz} KeyLength=${kNiNeConf.keyLength.get}  NumTables=${kNiNeConf.numTables.get}")
+                  builder=new SimpleLSHLookupKNNGraphBuilder(data)
+                  (builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].computeGraph(data, numNeighbors, kNiNeConf.keyLength.get, kNiNeConf.numTables.get, new EuclideanDistanceProvider(), Some(kNiNeConf.blockSz)),builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].lookup)
+              case "lsh" =>
+                  /* LOOKUP VERSION */
+                  builder=new LSHLookupKNNGraphBuilder(data)
+                  if (kNiNeConf.keyLength.isDefined && kNiNeConf.numTables.isDefined)
+                    (builder.asInstanceOf[LSHLookupKNNGraphBuilder].computeGraph(data, numNeighbors, kNiNeConf.keyLength.get, kNiNeConf.numTables.get, kNiNeConf.radius0, kNiNeConf.maxComparisons, new EuclideanDistanceProvider()),builder.asInstanceOf[LSHLookupKNNGraphBuilder].lookup)
+                  else
+                  {
+                    //val cMax=if (kNiNeConf.maxComparisons>0) kNiNeConf.maxComparisons else 250
+                    val cMax=if (kNiNeConf.maxComparisons.isDefined) math.max(kNiNeConf.maxComparisons.get,numNeighbors) else math.max(128,10*numNeighbors)
+                    //val factor=if (options.contains("fast")) 4.0 else 0.8
+                    val factor=2.0
+                    val (hasher,nComps,suggestedRadius)=EuclideanLSHasher.getHasherForDataset(data, (cMax*factor).toInt) //Make constant size buckets
+                    (builder.asInstanceOf[LSHLookupKNNGraphBuilder].computeGraph(data, numNeighbors, hasher, Some(suggestedRadius), Some(cMax.toInt), new EuclideanDistanceProvider()),builder.asInstanceOf[LSHLookupKNNGraphBuilder].lookup)
+                  }
+              case somethingElse =>
+                  /* BRUTEFORCE VERSION */
+                  BruteForceKNNGraphBuilder.parallelComputeGraph(data, numNeighbors, numPartitions)
+            }
+                   
 
     //Print graph
     /*println("There goes the graph:")
@@ -339,6 +340,7 @@ val timeStart=System.currentTimeMillis();
         val edgesR=refinedGraph.flatMap({case (index, (c,neighbors)) =>
                                                    neighbors.map({case (destination, distance) =>
                                                                          (index, destination, math.sqrt(distance))}).toSet})
+        //TODO - Move sqrt in previous line to graph class.
         val totalElements=data.count()
         val e=edgesR.first()
         println("Added "+(System.currentTimeMillis()-timeStartR)+" milliseconds")

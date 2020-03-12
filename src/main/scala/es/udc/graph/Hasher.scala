@@ -276,7 +276,7 @@ class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int, splitW:Double=4
           }
         }
         dotProd/=radius
-        hash(j)=math.round((dotProd + b(i)(j))/w).toInt
+        hash(j)=math.ceil((dotProd + b(i)(j))/w).toInt //Ceil ensures at least two buckets regardless of how large W is.
       }
       hash(keyLength)=i//Add the number of table to the end of the hash to avoid collisions with hashes from other tables.
       hashes=(new Hash(hash),index) :: hashes
@@ -317,7 +317,7 @@ class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int, splitW:Double=4
 
 class EuclideanProjectedLSHasher(dimension:Int, kLength:Int, nTables:Int, blockSz:Int) extends Hasher
 {
-  val underlyingHasher=new EuclideanLSHasher(dimension, kLength, nTables)
+  val underlyingHasher=new EuclideanLSHasher(dimension, kLength, nTables, 1000) //FastKNN only contemplates binary hashes
   val w=ofDim[Double](kLength+1)
   
   protected def _init():Unit=
