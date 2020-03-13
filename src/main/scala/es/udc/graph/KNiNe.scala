@@ -274,9 +274,17 @@ val timeStart=System.currentTimeMillis();
     val (graph,lookup)=method match
             {
               case "fastKNN-AGH" =>
-                  println(s"Method: fastKNN with AGH (must be precomputed on dataset labels) as LSH. BlockSz=${kNiNeConf.blockSz} Iterations=${kNiNeConf.iterations}")
                   builder=new SimpleLSHLookupKNNGraphBuilder(data)
-                  (builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].iterativeComputeGraph(data, numNeighbors, 0, 0, new EuclideanDistanceProvider(), Some(kNiNeConf.blockSz), kNiNeConf.iterations, true),builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].lookup)
+                          val kLength=data.map({case (id, p) =>
+                                                  val h=p.label.toInt
+                                                  var pow=0
+                                                  while (math.pow(2, pow)<h)
+                                                    pow+=1
+                                                  pow
+                                                }).max()
+                  println(s"Method: fastKNN with AGH (must be precomputed on dataset labels) as LSH. BlockSz=${kNiNeConf.blockSz} Iterations=${kNiNeConf.iterations}  keyLength=$kLength")
+                  builder=new SimpleLSHLookupKNNGraphBuilder(data)
+                  (builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].iterativeComputeGraph(data, numNeighbors, kLength, 0, new EuclideanDistanceProvider(), Some(kNiNeConf.blockSz), kNiNeConf.iterations, true),builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].lookup)
               case "fastKNN-proj" =>
                 println(s"Method: fastKNN with random projections as LSH. BlockSz=${kNiNeConf.blockSz} KeyLength=${kNiNeConf.keyLength.get}  NumTables=${kNiNeConf.numTables.get} Iterations=${kNiNeConf.iterations}")
                   builder=new SimpleLSHLookupKNNGraphBuilder(data)
