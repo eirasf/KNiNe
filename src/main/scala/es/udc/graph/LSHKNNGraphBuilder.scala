@@ -73,6 +73,14 @@ abstract class GraphBuilder
 
 object GraphMerger extends Serializable
 {
+  def mergeGraphs(g1:RDD[(Long, List[(Long, Double)])], g2:RDD[(Long, List[(Long, Double)])], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, List[(Long, Double)])]=
+  {
+    if (g1==null) return g2
+    if (g2==null) return g1
+    return g1.union(g2).reduceByKey({case (neighbors1, neighbors2) =>
+                                                      GraphMerger.mergeNeighborLists(neighbors1, neighbors2, numNeighbors)
+                                                    })
+  }
   def mergeNeighborLists(neighbors1:List[(Long, Double)], neighbors2:List[(Long, Double)], numNeighbors:Int):List[(Long, Double)]=
       {
         var sNeighbors1=neighbors1.sortBy(_._2)

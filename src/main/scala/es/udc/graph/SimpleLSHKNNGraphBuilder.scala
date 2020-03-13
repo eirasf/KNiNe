@@ -40,6 +40,9 @@ abstract class SimpleLSHKNNGraphBuilder extends GraphBuilder
       return null
     }
     
+    //DEBUG
+    //hashBuckets.foreach({case (h,b,c) => if (b.toSet.contains(77)) println(s"${h.toString()} -> ${b.map(_.toString).mkString(",")}")})
+    
     val numBuckets=hashBuckets.count()
     val stepOps=hashBuckets.map({case (h,s,n) => (n,1)})
                    .reduceByKey(_+_)
@@ -51,6 +54,34 @@ abstract class SimpleLSHKNNGraphBuilder extends GraphBuilder
 
     println(f"Performing $numStepOps%g ops (largest bucket has $largestBucketSize%d elements) - Scan rate=${100*totalOps/bfOps}%.4f%%")
     return getGraphFromBuckets(data, hashBuckets, numNeighbors, measurer).coalesce(data.getNumPartitions)
+  }
+  
+  def iterativeComputeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, hasherKeyLength:Int, hasherNumTables:Int, measurer:DistanceProvider, blockSz:Option[Int], numIterations:Int, useLabelAsHashToBeProjected:Boolean=false):RDD[(Long, List[(Long, Double)])]=
+  {
+    println("SimpleLSHKNN - Iteration 1")
+    var g=computeGraph(data, numNeighbors, hasherKeyLength, hasherNumTables, measurer, blockSz, useLabelAsHashToBeProjected)
+    for (i <- 1 until numIterations)
+    {
+      /*
+      //DEBUG - SAVE
+      g.flatMap({case (index, neighbors) =>
+                 neighbors.map({case (destination, distance) =>
+                                       (index, destination, math.sqrt(distance))}).toSet})
+       .saveAsTextFile(s"/Users/eirasf/Desktop/temp-fastknn$i")*/
+       
+      println(s"SimpleLSHKNN - Iteration ${i+1}")
+      val gs=computeGraph(data, numNeighbors, hasherKeyLength, hasherNumTables, measurer, blockSz, useLabelAsHashToBeProjected)
+      g=GraphMerger.mergeGraphs(g, gs, numNeighbors, measurer)
+    }
+    
+    /*
+    //DEBUG - SAVE
+      g.flatMap({case (index, neighbors) =>
+                 neighbors.map({case (destination, distance) =>
+                                       (index, destination, math.sqrt(distance))}).toSet})
+       .saveAsTextFile(s"/Users/eirasf/Desktop/temp-fastknn$numIterations")*/
+    
+    return g
   }
   
   def computeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, hasherKeyLength:Int, hasherNumTables:Int, measurer:DistanceProvider, blockSz:Option[Int], useLabelAsHashToBeProjected:Boolean=false):RDD[(Long, List[(Long, Double)])]

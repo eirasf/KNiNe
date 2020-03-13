@@ -22,6 +22,7 @@ class Hash(var values: Array[Int]) extends Serializable
     {
       return new Hash(this.values.slice(0, len))
     }
+    override def toString():String=s"[${values.map(_.toString()).mkString(",")} - ${values.size}]"
 }
 
 trait Hasher extends Serializable
@@ -239,7 +240,8 @@ class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int, splitW:Double=4
       {
         for (k <- 0 until dimension)
           gaussianVectors(i)(j)(k)=randomGenerator.nextGaussian()
-        b(i)(j)=randomGenerator.nextDouble*w
+        //b(i)(j)=randomGenerator.nextDouble*w //This was too large in comparison with standardized data being dot producted with the gaussian vectors.
+        b(i)(j)=randomGenerator.nextGaussian
       }
   }
   this._init()
@@ -276,6 +278,16 @@ class EuclideanLSHasher(dimension:Int, kLength:Int, nTables:Int, splitW:Double=4
           }
         }
         dotProd/=radius
+        
+        /*
+        //DEBUG
+        if ((index==0) || (index==100))
+        {
+          println(point)
+          println(gaussianVectors(i)(j).map(_.toString).mkString(","))
+          println(s" 0 - $j - $dotProd - ${(dotProd + b(i)(j))} - ${math.ceil((dotProd + b(i)(j))/w).toInt}")
+        }*/
+        
         hash(j)=math.ceil((dotProd + b(i)(j))/w).toInt //Ceil ensures at least two buckets regardless of how large W is.
       }
       hash(keyLength)=i//Add the number of table to the end of the hash to avoid collisions with hashes from other tables.
@@ -340,6 +352,23 @@ class EuclideanProjectedLSHasher(dimension:Int, kLength:Int, nTables:Int, blockS
     //println("DEBUG: Pre hashData flatMap call")
     val hashes=data.flatMap({ case (index, point) => bt.value.getHashes(point.features, index, radius) });
     
+    /*
+    //DEBUG
+    hashes.map({case (h,id) =>
+                        //DEBUG
+                        if (id==0)
+                        {
+                          h.values.zip(w).foreach(println)
+                          println(s"Sum:${h.values.zip(w).map({case (hi,wi) => hi*wi}).sum}")
+                        }
+                        
+                        (h.values.zip(w).map({case (hi,wi) => hi*wi}).sum,id)})
+                        .sortBy(_._1)
+                        .zipWithIndex
+                        .take(20)
+                        .foreach({case ((proj,id),pos) => println(s"SORTED: ${((proj,id),pos)}")})
+    */
+    
     return hashes.map({case (h,id) =>
                         (h.values.zip(w).map({case (hi,wi) => hi*wi}).sum,id)})
                         .sortBy(_._1)
@@ -388,7 +417,6 @@ class PrecomputedProjectedLSHasher(kLength:Int, blockSz:Int) extends Hasher
     val bt=data.sparkContext.broadcast(t)
     //println("DEBUG: Pre hashData flatMap call")
     val hashes=data.flatMap({ case (index, point) => List((new Hash(toBinary(point.label.toInt)), index)) });
-    
     return hashes.map({case (h,id) =>
                         (h.values.zip(w).map({case (hi,wi) => hi*wi}).sum,id)})
                         .sortBy(_._1)

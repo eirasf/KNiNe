@@ -69,16 +69,20 @@ object KNiNeConfiguration
                        else
                          None
     val blockSz=if (options.exists(_._1=="blocksz"))
-                         options("blocksz").asInstanceOf[Double].toInt
+                         options("blocksz").asInstanceOf[Int]
                        else
                          KNiNe.DEFAULT_BLOCKSZ
-    return new KNiNeConfiguration(numTables, keyLength, maxComparisons, radius0, options("refine").asInstanceOf[Int], blockSz)
+    val iterations=if (options.exists(_._1=="iterations"))
+                         options("iterations").asInstanceOf[Int]
+                       else
+                         KNiNe.DEFAULT_ITERATIONS
+    return new KNiNeConfiguration(numTables, keyLength, maxComparisons, radius0, options("refine").asInstanceOf[Int], blockSz, iterations)
   }
 }
 
-class KNiNeConfiguration(val numTables:Option[Int], val keyLength:Option[Int], val maxComparisons:Option[Int], val radius0:Option[Double], val refine:Int, val blockSz:Int)
+class KNiNeConfiguration(val numTables:Option[Int], val keyLength:Option[Int], val maxComparisons:Option[Int], val radius0:Option[Double], val refine:Int, val blockSz:Int, val iterations:Int)
 {
-  def this() = this(None, None, None, None, KNiNe.DEFAULT_REFINEMENT, KNiNe.DEFAULT_BLOCKSZ)
+  def this() = this(None, None, None, None, KNiNe.DEFAULT_REFINEMENT, KNiNe.DEFAULT_BLOCKSZ, KNiNe.DEFAULT_ITERATIONS)
   override def toString():String=
   {
     return "R0="+this.radius0+";NT="+this.numTables+";KL="+this.keyLength+";MC="+this.maxComparisons+";Refine="+this.refine
@@ -87,11 +91,12 @@ class KNiNeConfiguration(val numTables:Option[Int], val keyLength:Option[Int], v
 
 object KNiNe
 {
-  val DEFAULT_METHOD="lsh"
+  val DEFAULT_METHOD="vrlsh"
   val DEFAULT_K=10
   val DEFAULT_REFINEMENT=1
   val DEFAULT_NUM_PARTITIONS:Double=512
   val DEFAULT_BLOCKSZ:Int=100
+  val DEFAULT_ITERATIONS:Int=1
 
   def showUsageAndExit()=
   {
@@ -99,17 +104,20 @@ object KNiNe
     Dataset must be a libsvm or text file
 Options:
     -k    Number of neighbors (default: """+KNiNe.DEFAULT_K+""")
-    -m    Method used to compute the graph. Valid values: lsh, brute, fastKNN-proj, fastKNN-AGH (default: """+KNiNe.DEFAULT_METHOD+""")
+    -m    Method used to compute the graph. Valid values: vrlsh, brute, fastKNN-proj, fastKNN-AGH (default: """+KNiNe.DEFAULT_METHOD+""")
     -r    Starting radius (default: """+LSHKNNGraphBuilder.DEFAULT_RADIUS_START+""")
     -t    Maximum comparisons per item (default: auto)
     -c    File containing the graph to compare to (default: nothing)
     -p    Number of partitions for the data RDDs (default: """+KNiNe.DEFAULT_NUM_PARTITIONS+""")
     -d    Number of refinement (descent) steps (LSH only) (default: """+KNiNe.DEFAULT_REFINEMENT+""")
     -b    blockSz (fastKNN only) (default: """+KNiNe.DEFAULT_BLOCKSZ+""")
+    -i    iterations (fastKNN only) (default: """+KNiNe.DEFAULT_ITERATIONS+""")
 
 Advanced LSH options:
     -n    Number of hashes per item (default: auto)
-    -l    Hash length (default: auto)""")
+    -l    Hash length (default: auto)
+
+""")
     System.exit(-1)
   }
   def parseParams(p:Array[String]):Map[String, Any]=
@@ -146,6 +154,7 @@ Advanced LSH options:
           case "p"   => "num_partitions"
           case "d"   => "refine"
           case "b"   => "blocksz"
+          case "i"   => "iterations"
           case somethingElse => readOptionName
         }
       if (!m.keySet.exists(_==option) && option==readOptionName)
@@ -155,7 +164,7 @@ Advanced LSH options:
       }
       if (option=="method")
       {
-        if (p(i+1)=="lsh" || p(i+1)=="brute" || p(i+1)=="fastKNN-proj" || p(i+1)=="fastKNN-AGH")
+        if (p(i+1)=="vrlsh" || p(i+1)=="brute" || p(i+1)=="fastKNN-proj" || p(i+1)=="fastKNN-AGH")
           m(option)=p(i+1)
         else
         {
@@ -168,7 +177,7 @@ Advanced LSH options:
         if (option=="compare")
           m(option)=p(i+1)
         else
-          if (option=="refine")
+          if ((option=="refine") || (option=="blocksz") || (option=="iterations"))
             m(option)=p(i+1).toInt
           else
             m(option)=p(i+1).toDouble
@@ -265,14 +274,14 @@ val timeStart=System.currentTimeMillis();
     val (graph,lookup)=method match
             {
               case "fastKNN-AGH" =>
-                  println(s"Method: fastKNN with AGH (must be precomputed on dataset labels) as LSH. BlockSz=${kNiNeConf.blockSz}")
+                  println(s"Method: fastKNN with AGH (must be precomputed on dataset labels) as LSH. BlockSz=${kNiNeConf.blockSz} Iterations=${kNiNeConf.iterations}")
                   builder=new SimpleLSHLookupKNNGraphBuilder(data)
-                  (builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].computeGraph(data, numNeighbors, 0, 0, new EuclideanDistanceProvider(), Some(kNiNeConf.blockSz), true),builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].lookup)
+                  (builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].iterativeComputeGraph(data, numNeighbors, 0, 0, new EuclideanDistanceProvider(), Some(kNiNeConf.blockSz), kNiNeConf.iterations, true),builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].lookup)
               case "fastKNN-proj" =>
-                println(s"Method: fastKNN with random projections as LSH. BlockSz=${kNiNeConf.blockSz} KeyLength=${kNiNeConf.keyLength.get}  NumTables=${kNiNeConf.numTables.get}")
+                println(s"Method: fastKNN with random projections as LSH. BlockSz=${kNiNeConf.blockSz} KeyLength=${kNiNeConf.keyLength.get}  NumTables=${kNiNeConf.numTables.get} Iterations=${kNiNeConf.iterations}")
                   builder=new SimpleLSHLookupKNNGraphBuilder(data)
-                  (builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].computeGraph(data, numNeighbors, kNiNeConf.keyLength.get, kNiNeConf.numTables.get, new EuclideanDistanceProvider(), Some(kNiNeConf.blockSz)),builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].lookup)
-              case "lsh" =>
+                  (builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].iterativeComputeGraph(data, numNeighbors, kNiNeConf.keyLength.get, kNiNeConf.numTables.get, new EuclideanDistanceProvider(), Some(kNiNeConf.blockSz), kNiNeConf.iterations),builder.asInstanceOf[SimpleLSHLookupKNNGraphBuilder].lookup)
+              case "vrlsh" =>
                   /* LOOKUP VERSION */
                   builder=new LSHLookupKNNGraphBuilder(data)
                   if (kNiNeConf.keyLength.isDefined && kNiNeConf.numTables.isDefined)
@@ -333,7 +342,7 @@ val timeStart=System.currentTimeMillis();
       var refinedGraph=graph.map({case (v, listNeighs) => (v, (BDV.zeros[Int](1), listNeighs))})
       for (i <- 0 until kNiNeConf.refine)
       {
-        println("Refined "+i)
+        println(s"Performing neighbor descent step ${i+1}")
         val timeStartR=System.currentTimeMillis();
         refinedGraph=builder.refineGraph(data, refinedGraph, numNeighbors, new EuclideanDistanceProvider())
         fileNameR=fileName+"refined"+i
@@ -370,7 +379,6 @@ val timeStart=System.currentTimeMillis();
                      .foreach(println(_))
       */
     }
-
     //Stop the Spark Context
     sc.stop()
   }
