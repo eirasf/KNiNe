@@ -12,9 +12,10 @@ trait GroupingProvider extends Serializable
 
 class DummyGroupingProvider() extends GroupingProvider
 {
+  val DEFAULT_GROUPID=0
   def getGroupId(p1:LabeledPoint):Int=
   {
-    return 0
+    return DEFAULT_GROUPID
   }
   def getGroupIdList():Iterable[Int]=
   {

@@ -7,104 +7,15 @@ import es.udc.graph.utils.GraphUtils
 import org.apache.spark.HashPartitioner
 import breeze.linalg.{DenseVector => BDV}
 
-object GraphBuilder
-{
-  def mergeSubgraphs(g1:RDD[(Long, (BDV[Int], List[(Int,List[(Long, Double)])]))], g2:RDD[(Long, (BDV[Int], List[(Int,List[(Long, Double)])]))], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, (BDV[Int], List[(Int,List[(Long, Double)])]))]=
-  {
-    if (g1==null) return g2
-    if (g2==null) return g1
-    return g1.union(g2).reduceByKey({case ((viewed1,groupedNeighbors1), (viewed2,groupedNeighbors2)) =>
-                                                      (viewed1+viewed2,GraphMerger.mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
-                                                    })
-  }
-}
-
-abstract class GraphBuilder
-{
-  /**
- * @param g
- * @return Resulting graph of searching for closer neighbors in the neighbors of the neighbors for each node
- */
-  /*private */def refineGraph(data:RDD[(Long,LabeledPoint)], g:RDD[(Long, (BDV[Int],List[(Long, Double)]))], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, (BDV[Int],List[(Long, Double)]))]=
-  {
-    val grouper=new DummyGroupingProvider()
-    val grId=grouper.getGroupId(data.first()._2)
-    val graph=refineGroupedGraph(data, g.map({case (index, (comps,neighs)) => (index,(comps,List((grId,neighs))))}), numNeighbors, measurer, grouper)
-    return graph.map({case (i1, (comps1,groupedNeighbors)) => (i1, (comps1,groupedNeighbors.head._2))})
-  }
-  
-  /*private */def refineGroupedGraph(data:RDD[(Long,LabeledPoint)], g:RDD[(Long, (BDV[Int],List[(Int,List[(Long, Double)])]))], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, (BDV[Int],List[(Int,List[(Long, Double)])]))]=
-  {
-    var pairsWithNewNeighbors:RDD[(Long, Long)]=g.flatMap(
-                                              {
-                                                case (node, (viewed,groupedNeighbors)) =>
-                                                  val allNeighbors=groupedNeighbors.flatMap(_._2.map(_._1))
-                                                  groupedNeighbors.flatMap(
-                                                      {
-                                                        case (grId,neighbors) => neighbors.map({case (dest, dist) => (dest,node)})
-                                                      })
-                                                      .map({case (dest,node) => (dest,(node,allNeighbors))})
-                                              }).partitionBy(data.partitioner.getOrElse(new HashPartitioner(data.getNumPartitions)))
-                                         .join(g)
-                                         .flatMap({case (dest, ((node,neighbors), (v,neighsGroupedNeighs))) => neighsGroupedNeighs.flatMap(
-                                                                                                       {
-                                                                                                         case (grId,neighsNeighs) =>
-                                                                                                             neighsNeighs.flatMap(
-                                                                                                                 {case (d, dist) => if ((node!=d) && (!neighbors.contains(d)))
-                                                                                                                      Some((node, d))
-                                                                                                                    else
-                                                                                                                      None})
-                                                                                                       })})
-                                         .map({case (x,y) => if (x<y) (x,y) else (y,x)})
-    pairsWithNewNeighbors=pairsWithNewNeighbors.groupByKey().flatMap({case (d, neighs) => neighs.toSet.toArray.map({case x => (d, x)})})
-    val totalElements=data.count()
-    val bfOps:Double=totalElements*(totalElements-1)/2.0
-    val stepOps=pairsWithNewNeighbors.count()
-    println("Refining step takes "+stepOps+" comparisons ("+(stepOps/bfOps)+" wrt bruteforce)")
-    var subgraph=getGroupedGraphFromIndexPairs(data,
-                                        pairsWithNewNeighbors,
-                                        numNeighbors,
-                                        measurer,
-                                        grouper)
-    return GraphBuilder.mergeSubgraphs(g, subgraph, numNeighbors, measurer)
-  }
-  protected def getGroupedGraphFromIndexPairs(data:RDD[(Long,LabeledPoint)], pairs:RDD[(Long, Long)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, (BDV[Int],List[(Int,List[(Long, Double)])]))]
-}
 
 object GraphMerger extends Serializable
 {
-  def mergeGraphs(g1:RDD[(Long, List[(Long, Double)])], g2:RDD[(Long, List[(Long, Double)])], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, List[(Long, Double)])]=
+  def mergeGraphs(g1:RDD[(Long, NeighborsForElement)], g2:RDD[(Long, NeighborsForElement)], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, NeighborsForElement)]=
   {
     if (g1==null) return g2
     if (g2==null) return g1
-    return g1.union(g2).reduceByKey({case (neighbors1, neighbors2) =>
-                                                      GraphMerger.mergeNeighborLists(neighbors1, neighbors2, numNeighbors)
-                                                    })
+    return g1.union(g2).reduceByKey(NeighborsForElement.merge(_, _))
   }
-  def mergeNeighborLists(neighbors1:List[(Long, Double)], neighbors2:List[(Long, Double)], numNeighbors:Int):List[(Long, Double)]=
-      {
-        var sNeighbors1=neighbors1.sortBy(_._2)
-         var sNeighbors2=neighbors2.sortBy(_._2)
-         
-         var finalNeighbors:List[(Long, Double)]=Nil
-         
-         while(finalNeighbors.size<numNeighbors && (!sNeighbors1.isEmpty || !sNeighbors2.isEmpty))
-         {
-           if (sNeighbors2.isEmpty || (!sNeighbors1.isEmpty && sNeighbors1.head._2<sNeighbors2.head._2))
-           {
-             if ((finalNeighbors==Nil) || !finalNeighbors.contains(sNeighbors1.head))
-               finalNeighbors=sNeighbors1.head :: finalNeighbors
-             sNeighbors1=sNeighbors1.tail
-           }
-           else
-           {
-             if ((finalNeighbors==Nil) || !finalNeighbors.contains(sNeighbors2.head))
-               finalNeighbors=sNeighbors2.head :: finalNeighbors
-             sNeighbors2=sNeighbors2.tail
-           }
-         }
-         finalNeighbors
-      }
   
   def mergeGroupedNeighbors(groupedNeighbors1:List[(Int,List[(Long,Double)])], groupedNeighbors2:List[(Int,List[(Long,Double)])], numNeighbors:Int):List[(Int, List[(Long, Double)])]=
   {
@@ -132,9 +43,9 @@ object LSHKNNGraphBuilder
 
 abstract class LSHKNNGraphBuilder extends GraphBuilder
 {
-  final def computeGroupedGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, hasher:Hasher, startRadius:Option[Double], maxComparisonsPerItem:Option[Int], measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, List[(Int,List[(Long, Double)])])]=
+  final def computeGroupedGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, hasher:Hasher, startRadius:Option[Double], maxComparisonsPerItem:Option[Int], measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, GroupedNeighborsForElement)]=
   {
-    var fullGraph:RDD[(Long, (BDV[Int],List[(Int,List[(Long, Double)])]))]=null //(node, (viewed, List[(groupingId,List[(neighbor,distance))]]))
+    var fullGraph:RDD[(Long, GroupedNeighborsForElementWithComparisonCount)]=null //(node, (viewed, List[(groupingId,List[(neighbor,distance))]]))
     var currentData:RDD[(Long,(LabeledPoint,Iterable[Int]))]=data.map({case (id, point) => (id,(point,List[Int]()))}) //Adding "special requests" list
     var radius=startRadius.getOrElse(LSHKNNGraphBuilder.DEFAULT_RADIUS_START)//5//0.1
     val totalElements=currentData.count()
@@ -331,10 +242,12 @@ abstract class LSHKNNGraphBuilder extends GraphBuilder
     }
     if (fullGraph!=null)
     {
-      val incomplete=fullGraph.filter({case (id,(viewed,groups)) => (groups.size<grouper.numGroups) || !groups.forall({case (grId,neighborList) => neighborList.size>=numNeighbors})})
-                              .map({case (id,(viewed,groups)) =>
-                                val mapGroups=groups.toMap
-                                val incompleteGroups=grouper.getGroupIdList().flatMap({case grId => if (!mapGroups.contains(grId) || (mapGroups.get(grId).get.size<numNeighbors))
+      val incomplete=fullGraph.filter({case (id,neighs) => neighs.numberOfGroupsWithAtLeastKElements(numNeighbors)<grouper.numGroups})
+                              .map({case (id,neighs) =>
+                                val incompleteGroups=grouper.getGroupIdList()
+                                                            .flatMap({case grId =>
+                                                                                  val neighsOfGroup=neighs.neighborsOfGroup(grId) 
+                                                                                  if (neighsOfGroup.size<numNeighbors)
                                                                                                   Some(grId)
                                                                                                 else
                                                                                                   None})
@@ -379,12 +292,11 @@ abstract class LSHKNNGraphBuilder extends GraphBuilder
         //Get all nodes pointing to a remaining point
         val reverseNeighborPairs:RDD[(Long,Long)]=fullGraph.flatMap(
                                                        {
-                                                         case (dest, (viewed,groupedNeig)) =>
+                                                         case (dest, neighs) =>
                                                              val rData=bRemainingData.value
                                                              val rDataMap=rData.toMap
-                                                             val groupedNeigMap=groupedNeig.toMap
                                                              //Each neighbor group that was already in the graph is examined
-                                                             groupedNeig.flatMap(
+                                                             neighs.groupedNeighborLists.flatMap(
                                                                  {
                                                                    case (grId,neig) =>
                                                                      //If we have remaining datapoints of that group
@@ -394,13 +306,13 @@ abstract class LSHKNNGraphBuilder extends GraphBuilder
                                                                              //Each datapoint of that group
                                                                              case (idOrig,requestsOrig) =>
                                                                                  //If it is one of the neighbors for dest in the graph
-                                                                                 if (neig.map(_._1).contains(idOrig))
+                                                                                 if (neig.listNeighbors.map(_.index).contains(idOrig))
                                                                                  {
                                                                                    val srcList=if (requestsOrig.isEmpty) //Any neighbor will do, so all are selected
                                                                                                  grouper.getGroupIdList()
                                                                                                else
                                                                                                  requestsOrig
-                                                                                   srcList.map({case reqId => (idOrig,(dest :: groupedNeigMap(reqId).map(_._1).filter(_!=idOrig)).toSet)})
+                                                                                   srcList.map({case reqId => (idOrig,(dest :: neighs.neighborsOfGroup(reqId).get.listNeighbors.map(_.index).filter(_!=idOrig)).toSet)})
                                                                                  }
                                                                                  else
                                                                                     None
@@ -415,13 +327,13 @@ abstract class LSHKNNGraphBuilder extends GraphBuilder
         
         val pairsWithNewNeighbors:RDD[(Long, Long)]=currentData
                                           .join(fullGraph) //Joined with currentData to restrict this to only elements in the current dataset.
-                                          .flatMap({case (id,(point,(viewed,groupedNeighs))) => groupedNeighs.flatMap({case (grId,neighs) => neighs.flatMap({case (dest,dist) => Some((dest,id))})})})
+                                          .flatMap({case (id,(point,groupedNeighs)) => groupedNeighs.groupedNeighborLists.flatMap({case (grId,neighs) => neighs.listNeighbors.flatMap({case dest => Some((dest.index,id))})})})
                                           .groupByKey()
                                           .join(fullGraph)
                                           .flatMap(
                                               {
-                                                case (via,(ids,(viewed,groupedNeighs))) =>
-                                                  groupedNeighs.flatMap({case (grId,neighs) => neighs.flatMap({case (dest,dist) => ids.flatMap({case id=>if (id!=dest) Some((id,dest)) else None})})})
+                                                case (via,(ids,groupedNeighs)) =>
+                                                  groupedNeighs.groupedNeighborLists.flatMap({case (grId,neighs) => neighs.listNeighbors.flatMap({case dest => ids.flatMap({case id=>if (id!=dest.index) Some((id,dest.index)) else None})})})
                                               })
         val totalPairs=pairsWithNewNeighbors
                                  .union(reverseNeighborPairs)
@@ -457,10 +369,10 @@ totalOps=totalOps+pairs.count()
     println(s"Operations wrt bruteforce: ${totalOps/bfOps} "+f"($totalOps%d total ops / ${bfOps.toLong}%d)")
     //println((totalOps/bfOps)+"#")
     
-    return fullGraph.map({case (node, (viewed, neighs)) => (node,neighs)}).coalesce(data.getNumPartitions)
+    return fullGraph.map({case (node, neighs) => (node,neighs.asInstanceOf[GroupedNeighborsForElement])}).coalesce(data.getNumPartitions)
   }
   
-  def computeGroupedGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, startRadius:Option[Double], maxComparisonsPerItem:Option[Int], measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, List[(Int,List[(Long, Double)])])]=
+  def computeGroupedGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, startRadius:Option[Double], maxComparisonsPerItem:Option[Int], measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, GroupedNeighborsForElement)]=
   {
     val cMax=if (maxComparisonsPerItem.isDefined) math.max(maxComparisonsPerItem.get,numNeighbors) else math.max(128,10*numNeighbors)
     val factor=2.0
@@ -468,10 +380,10 @@ totalOps=totalOps+pairs.count()
     return computeGroupedGraph(data, numNeighbors, hasher, Some(startRadius.getOrElse(suggestedRadius)), Some(cMax.toInt), measurer, grouper)
   }
   
-  def computeGroupedGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, keyLength:Int, numTables:Int, startRadius:Option[Double], maxComparisonsPerItem:Option[Int], measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, List[(Int,List[(Long, Double)])])]=
+  def computeGroupedGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, keyLength:Int, numTables:Int, startRadius:Option[Double], maxComparisonsPerItem:Option[Int], measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, GroupedNeighborsForElement)]=
     computeGroupedGraph(data, numNeighbors, new EuclideanLSHasher(data.map({case (index, point) => point.features.size}).max(), keyLength, numTables), startRadius, maxComparisonsPerItem, measurer, grouper)
   
-  def computeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, startRadius:Option[Double], maxComparisonsPerItem:Option[Int], measurer:DistanceProvider):RDD[(Long, List[(Long, Double)])]=
+  def computeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, startRadius:Option[Double], maxComparisonsPerItem:Option[Int], measurer:DistanceProvider):RDD[(Long, NeighborsForElement)]=
   {
     val cMax=if (maxComparisonsPerItem.isDefined) math.max(maxComparisonsPerItem.get,numNeighbors) else math.max(128,10*numNeighbors)
     val factor=2.0
@@ -479,16 +391,16 @@ totalOps=totalOps+pairs.count()
     return computeGraph(data, numNeighbors, hasher, Some(startRadius.getOrElse(suggestedRadius)), Some(cMax.toInt), measurer)
   }
   
-  def computeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, hasher:Hasher, startRadius:Option[Double], maxComparisonsPerItem:Option[Int], measurer:DistanceProvider):RDD[(Long, List[(Long, Double)])]=
+  def computeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, hasher:Hasher, startRadius:Option[Double], maxComparisonsPerItem:Option[Int], measurer:DistanceProvider):RDD[(Long, NeighborsForElement)]=
   {
     val graph=computeGroupedGraph(data, numNeighbors, hasher, startRadius, maxComparisonsPerItem, measurer, new DummyGroupingProvider())
     return graph.map(
         {
-          case (index, groupedNeighs) => (index, groupedNeighs.head._2)
+          case (index, groupedNeighs) => (index, groupedNeighs.groupedNeighborLists.head._2)
         })
   }
   
-  def computeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, hasherKeyLength:Int, hasherNumTables:Int, startRadius:Option[Double], maxComparisonsPerItem:Option[Int], measurer:DistanceProvider):RDD[(Long, List[(Long, Double)])]
+  def computeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, hasherKeyLength:Int, hasherNumTables:Int, startRadius:Option[Double], maxComparisonsPerItem:Option[Int], measurer:DistanceProvider):RDD[(Long, NeighborsForElement)]
             =computeGraph(data,
                            numNeighbors,
                            new EuclideanLSHasher(data.map({case (index, point) => point.features.size}).max(), hasherKeyLength, hasherNumTables),//Get dimension from dataset
@@ -498,30 +410,23 @@ totalOps=totalOps+pairs.count()
                                                                                            
   protected def splitLargeBuckets(data:RDD[(Long,LabeledPoint)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], maxBucketSize:Int, radius:Double, hasher:Hasher):RDD[(Hash, Iterable[Long], Int)]
   
-  protected def getGroupedGraphFromBuckets(data:RDD[(Long,LabeledPoint)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, (BDV[Int],List[(Int,List[(Long, Double)])]))]
+  protected def getGroupedGraphFromBuckets(data:RDD[(Long,LabeledPoint)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, GroupedNeighborsForElementWithComparisonCount)]
   
-  protected def getGroupedGraphFromPartitionedBuckets(data:RDD[(Long,LabeledPoint)], hashBuckets:RDD[(Hash, Iterable[Long], Iterable[Long])], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, (BDV[Int],List[(Int,List[(Long, Double)])]))]
+  protected def getGroupedGraphFromPartitionedBuckets(data:RDD[(Long,LabeledPoint)], hashBuckets:RDD[(Hash, Iterable[Long], Iterable[Long])], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, GroupedNeighborsForElementWithComparisonCount)]
   
-  protected def getGroupedGraphFromElementIndexLists(data:RDD[(Long,LabeledPoint)], elementIndexLists:RDD[Iterable[Long]], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, (BDV[Int],List[(Int,List[(Long, Double)])]))]
+  protected def getGroupedGraphFromElementIndexLists(data:RDD[(Long,LabeledPoint)], elementIndexLists:RDD[Iterable[Long]], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, GroupedNeighborsForElementWithComparisonCount)]
   
-  protected def getGroupedGraphFromPairs(data:RDD[(Long,LabeledPoint)], pairs:RDD[((Long, LabeledPoint), Long)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, (Int,List[(Int,List[(Long, Double)])]))]
+  protected def getGroupedGraphFromPairs(data:RDD[(Long,LabeledPoint)], pairs:RDD[((Long, LabeledPoint), Long)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, GroupedNeighborsForElementWithComparisonCount)]
   
   //protected def getGroupedGraphFromIndexPairs(data:RDD[(Long,LabeledPoint)], pairs:RDD[(Long, Long)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, (BDV[Int],List[(Int,List[(Long, Double)])]))]
   
-  private def simplifyDataset(dataset:RDD[(Long,(LabeledPoint,Iterable[Int]))], currentGraph:RDD[(Long, (BDV[Int],List[(Int,List[(Long, Double)])]))], numNeighbors:Int, maxComparisonsPerItem:Option[Int], grouper:GroupingProvider):RDD[(Long, (LabeledPoint, Iterable[Int]))]=
+  private def simplifyDataset(dataset:RDD[(Long,(LabeledPoint,Iterable[Int]))], currentGraph:RDD[(Long, GroupedNeighborsForElementWithComparisonCount)], numNeighbors:Int, maxComparisonsPerItem:Option[Int], grouper:GroupingProvider):RDD[(Long, (LabeledPoint, Iterable[Int]))]=
   {
     val requestsByNodes:RDD[(Long,Option[Iterable[Int]])]=if (maxComparisonsPerItem.isDefined)
-                                                        currentGraph.map({case (index, (viewed,groupedList)) =>
-                                                                            def isFull(x:Int):Boolean=x>maxComparisonsPerItem.get
-                                                                            if (!viewed.forall(!isFull(_))) //There's at least one full
+                                                        currentGraph.map({case (index, neighs) =>
+                                                                            if (neighs.numberOfGroupsWithAtLeastKElements(numNeighbors)>0) //There's at least one full
                                                                             {
-                                                                              val mapGroups=groupedList.toMap
-                                                                              val incompleteGroups=grouper.getGroupIdList().flatMap({case grId =>
-                                                                                                                   if (!mapGroups.contains(grId) || (viewed(grId)<maxComparisonsPerItem.get))
-                                                                                                                     Some(grId)
-                                                                                                                   else
-                                                                                                                     None
-                                                                                                                     })
+                                                                              val incompleteGroups=neighs.getIdsOfGroupsWithLessThanKComparisons(maxComparisonsPerItem.get)
                                                                               (index,if (incompleteGroups.isEmpty) None else Some(incompleteGroups)) //None indicates that it should be removed.
                                                                             }
                                                                             else
@@ -529,14 +434,8 @@ totalOps=totalOps+pairs.count()
                                                                           })
                                                             
                                                       else//Remove only elements that already have all their neighbors
-                                                        currentGraph.map({case (index, (viewed,groupedList)) =>
-                                                                              val mapGroups=groupedList.toMap
-                                                                              val incompleteGroups=grouper.getGroupIdList().flatMap({case grId =>
-                                                                                                                   if (!mapGroups.contains(grId) || mapGroups.get(grId).get.size<numNeighbors)
-                                                                                                                     Some(grId)
-                                                                                                                   else
-                                                                                                                     None
-                                                                                                                     })
+                                                        currentGraph.map({case (index, neighs) =>
+                                                                              val incompleteGroups=neighs.getIdsOfIncompleteGroups()
                                                                               (index,if (incompleteGroups.isEmpty) None else Some(incompleteGroups)) //None indicates that it should be removed.
                                                                           })
     return dataset.leftOuterJoin(requestsByNodes).flatMap({case (index, (neighbors1, requestsOption)) =>
@@ -583,7 +482,7 @@ class LSHLookupKNNGraphBuilder(data:RDD[(Long,LabeledPoint)]) extends LSHKNNGrap
                     .flatMap({case (k, s) => if (s.size>1) Some((k, s, s.size)) else None})
   }
   
-  override def getGroupedGraphFromBuckets(data:RDD[(Long,LabeledPoint)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, (BDV[Int],List[(Int,List[(Long, Double)])]))]=
+  override def getGroupedGraphFromBuckets(data:RDD[(Long,LabeledPoint)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, GroupedNeighborsForElementWithComparisonCount)]=
   {
     val l=lookup
     //Discard single element hashes and for the rest get every possible pairing to build graph
@@ -599,13 +498,15 @@ class LSHLookupKNNGraphBuilder(data:RDD[(Long,LabeledPoint)]) extends LSHKNNGrap
                            Nil
                          })
              //Merge neighbors found for the same element in different hash buckets
-             .reduceByKey({case ((viewed1,groupedNeighbors1), (viewed2,groupedNeighbors2)) => (viewed1+viewed2,GraphMerger.mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
+             .reduceByKey({case (groupedNeighbors1, groupedNeighbors2) =>
+                                   groupedNeighbors1.addElements(groupedNeighbors2)
+                                   groupedNeighbors1
                            })
              .partitionBy(data.partitioner.getOrElse(new HashPartitioner(data.getNumPartitions)))
     graph
   }
   
-  override def getGroupedGraphFromPartitionedBuckets(data:RDD[(Long,LabeledPoint)], hashBuckets:RDD[(Hash, Iterable[Long], Iterable[Long])], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, (BDV[Int],List[(Int,List[(Long, Double)])]))]=
+  override def getGroupedGraphFromPartitionedBuckets(data:RDD[(Long,LabeledPoint)], hashBuckets:RDD[(Hash, Iterable[Long], Iterable[Long])], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, GroupedNeighborsForElementWithComparisonCount)]=
   {
     val l=lookup
     //Discard single element hashes and for the rest get every possible pairing to build graph
@@ -613,13 +514,14 @@ class LSHLookupKNNGraphBuilder(data:RDD[(Long,LabeledPoint)]) extends LSHKNNGrap
                                          BruteForceKNNGraphBuilder.computeGroupedGraph(l1, l2, l, numNeighbors, measurer, grouper)
                                          })
              //Merge neighbors found for the same element in different hash buckets
-             .reduceByKey({case ((viewed1,groupedNeighbors1), (viewed2,groupedNeighbors2)) => (viewed1+viewed2,GraphMerger.mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
+             .reduceByKey({case (neighs1, neighs2) => neighs1.addElements(neighs2)
+                                                      neighs1
                            })
              .partitionBy(data.partitioner.getOrElse(new HashPartitioner(data.getNumPartitions)))
     graph
   }
   
-  override def getGroupedGraphFromElementIndexLists(data:RDD[(Long,LabeledPoint)], elementIndexLists:RDD[Iterable[Long]], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, (BDV[Int],List[(Int,List[(Long, Double)])]))]=
+  override def getGroupedGraphFromElementIndexLists(data:RDD[(Long,LabeledPoint)], elementIndexLists:RDD[Iterable[Long]], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, GroupedNeighborsForElementWithComparisonCount)]=
   {
     val l=lookup
     //Discard single element hashes and for the rest get every possible pairing to build graph
@@ -635,14 +537,15 @@ class LSHLookupKNNGraphBuilder(data:RDD[(Long,LabeledPoint)]) extends LSHKNNGrap
                            Nil
                          })
              //Merge neighbors found for the same element in different hash buckets
-             .reduceByKey({case ((viewed1,groupedNeighbors1), (viewed2,groupedNeighbors2)) =>
-                             (viewed1+viewed2,GraphMerger.mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
+             .reduceByKey({case (groupedNeighbors1,groupedNeighbors2) =>
+                             groupedNeighbors1.addElements(groupedNeighbors2)
+                             groupedNeighbors1
                            })
                            
     graph
   }
   
-  override def getGroupedGraphFromPairs(data:RDD[(Long,LabeledPoint)], pairs:RDD[((Long, LabeledPoint), Long)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, (Int,List[(Int,List[(Long, Double)])]))]=
+  override def getGroupedGraphFromPairs(data:RDD[(Long,LabeledPoint)], pairs:RDD[((Long, LabeledPoint), Long)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, GroupedNeighborsForElementWithComparisonCount)]=
   {
     val l=lookup
     //Discard single element hashes and for the rest get every possible pairing to build graph
@@ -650,28 +553,35 @@ class LSHLookupKNNGraphBuilder(data:RDD[(Long,LabeledPoint)]) extends LSHKNNGrap
                 {
                   case ((i1,p1),i2) =>
                     val p2=l.lookup(i2)
-                    ((i1,grouper.getGroupId(p2)), (1,List((i2, measurer.getDistance(p1, p2)))))
+                    val newN=new NeighborsForElementWithComparisonCount(numNeighbors)
+                    newN.addElement(i2, measurer.getDistance(p1, p2))
+                    ((i1,grouper.getGroupId(p2)), newN)
                 })
              //Merge neighbors found for the same element in different hash buckets
-             .reduceByKey({case ((v1,neighbors1), (v2,neighbors2)) =>
-                             (v1+v2,GraphMerger.mergeNeighborLists(neighbors1, neighbors2, numNeighbors))
+             .reduceByKey({case (neighs1, neighs2) =>
+                             neighs1.addElements(neighs2)
+                             neighs1
                            })
              .map(
                  {
-                   case ((i1,grId2),(v,neighborList)) => (i1,(v,List((grId2,neighborList))))
+                   case ((i1,grId2),neighborList) =>
+                     val grNeighs=GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper,numNeighbors)
+                     grNeighs.addElementsOfGroup(grId2, neighborList, neighborList.comparisons)
+                     (i1,grNeighs)
                  }
                  )
              .reduceByKey(
                  {
-                   case ((v1,groupedNeighbors1),(v2,groupedNeighbors2)) =>
-                     (v1+v2,GraphMerger.mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
+                   case (neighs1,neighs2) =>
+                     neighs1.addElements(neighs2)
+                     neighs1
                  }
                  )
                  
     graph
   }
   
-  override def getGroupedGraphFromIndexPairs(data:RDD[(Long,LabeledPoint)], pairs:RDD[(Long, Long)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, (BDV[Int],List[(Int,List[(Long, Double)])]))]=
+  override def getGroupedGraphFromIndexPairs(data:RDD[(Long,LabeledPoint)], pairs:RDD[(Long, Long)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, GroupedNeighborsForElementWithComparisonCount)]=
   {
     val l=lookup
     //Discard single element hashes and for the rest get every possible pairing to build graph
@@ -679,28 +589,30 @@ class LSHLookupKNNGraphBuilder(data:RDD[(Long,LabeledPoint)]) extends LSHKNNGrap
                                 var p1=l.lookup(i1)
                                 var p2=l.lookup(i2)
                                 val d=measurer.getDistance(p1, p2)
-                                val counts1=BDV.zeros[Int](grouper.numGroups)
-                                counts1(grouper.getGroupId(p2))+=1
-                                val counts2=BDV.zeros[Int](grouper.numGroups)
-                                counts2(grouper.getGroupId(p1))+=1
-                                List[((Long,Int),(BDV[Int],List[(Long,Double)]))](((i1,grouper.getGroupId(p2)), (counts1,List((i2, d)))),((i2,grouper.getGroupId(p1)), (counts2,List((i1, d)))))
+                                val grN1=GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper,numNeighbors)
+                                grN1.addElementOfGroup(grouper.getGroupId(p2), i2, d)
+                                val grN2=GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper,numNeighbors)
+                                grN2.addElementOfGroup(grouper.getGroupId(p1), i1, d)
+                                List[((Long,Int),GroupedNeighborsForElementWithComparisonCount)](((i1,grouper.getGroupId(p2)), grN1),((i2,grouper.getGroupId(p1)), grN2))
                             })
              //Merge neighbors found for the same element in different hash buckets
-             .reduceByKey({case ((v1,neighbors1), (v2,neighbors2)) =>
-                             (v1+v2,GraphMerger.mergeNeighborLists(neighbors1, neighbors2, numNeighbors))
+             .reduceByKey({case (neigh1, neigh2) =>
+                             neigh1.addElements(neigh2)
+                             neigh1
                            })
              .map(
                  {
-                   case ((i1,grId2),(v,neighborList)) => (i1,(v,List((grId2,neighborList))))
+                   case ((i1,grId2),neighs) => (i1,neighs)
                  }
                  )
              .reduceByKey(
                  {
-                   case ((v1,groupedNeighbors1),(v2,groupedNeighbors2)) =>
-                     (v1+v2,GraphMerger.mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
+                   case (neighs1, neighs2) =>
+                     neighs1.addElements(neighs2)
+                     neighs1
                  }
                  )
-                           
+                 
     graph
   }
 }

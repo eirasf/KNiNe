@@ -13,6 +13,8 @@ import org.apache.log4j.Logger
 import org.apache.log4j.Level
 import org.apache.spark.HashPartitioner
 import es.udc.graph.GraphMerger
+import es.udc.graph.IndexDistancePair
+import es.udc.graph.NeighborsForElement
 
 object TruncateGraph
 {
@@ -54,14 +56,16 @@ object TruncateGraph
     //Load data from file
     val data = sc.textFile(datasetFile,numPartitions)
                                                         .map({ line => val values=line.substring(1,line.length-1).split(",")
-                                                                  (values(0).toLong, List((values(1).toLong, values(2).toDouble)))
+                                                                  val neighs=new NeighborsForElement(128)
+                                                                  neighs.addElement(values(1).toLong, values(2).toDouble)
+                                                                  (values(0).toLong, neighs)
                                                         }).partitionBy(new HashPartitioner(numPartitions))
-                                                        .reduceByKey({case (l1,l2) => GraphMerger.mergeNeighborLists(l1,l2,128)})
+                                                        .reduceByKey({case (l1,l2) => NeighborsForElement.merge(l1,l2)})
                                                         .sortBy(_._1, true, numPartitions)
     
     for (k <- List(2,4,8,16,32,64,128))
     {
-      data.flatMap({case (id,neighbors) => neighbors.takeRight(k).map({case (dest,dist) => (id,dest,dist)})}).saveAsTextFile(datasetFile.replace("128", ""+k))
+      data.flatMap({case (id,neighbors) => neighbors.listNeighbors.takeRight(k).map({case pair => (id,pair.index,pair.distance)})}).saveAsTextFile(datasetFile.replace("128", ""+k))
       println(s"Saved ${k}-NN graph in "+datasetFile.replace("128_", ""+k))
     }
     //Stop the Spark Context

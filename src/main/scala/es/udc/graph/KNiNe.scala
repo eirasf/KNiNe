@@ -323,7 +323,7 @@ val timeStart=System.currentTimeMillis();
     //var counted=edges.map({case x=>(x._1,1)}).reduceByKey(_+_).sortBy(_._1)
     //var forCount=counted.map(_._2)
 
-    var countEdges=graph.map({case (index, neighbors) => neighbors.toSet.size}).sum
+    var countEdges=graph.map({case (index, neighbors) => neighbors.listNeighbors.toSet.size}).sum
     println("Obtained "+countEdges+" edges for "+graph.count()+" nodes in "+(System.currentTimeMillis()-timeStart)+" milliseconds")
 
 
@@ -341,22 +341,22 @@ val timeStart=System.currentTimeMillis();
         i=i+1
         fileName=fileNameOriginal+"-"+i
       }
-      val edges=graph.flatMap({case (index, neighbors) => neighbors.map({case (destination, distance) => (index, destination, math.sqrt(distance))}).toSet})
+      val edges=graph.flatMap({case (index, neighbors) => neighbors.listNeighbors.map({case destPair => (index, destPair.index, math.sqrt(destPair.distance))}).toSet})
       edges.saveAsTextFile(fileName)
     }
     var fileNameR=fileName
     if (method!="brute")
     {
-      var refinedGraph=graph.map({case (v, listNeighs) => (v, (BDV.zeros[Int](1), listNeighs))})
+      var refinedGraph=graph.map({case (v, neighs) => (v, neighs.wrapWithCount(1))})
       for (i <- 0 until kNiNeConf.refine)
       {
         println(s"Performing neighbor descent step ${i+1}")
         val timeStartR=System.currentTimeMillis();
         refinedGraph=builder.refineGraph(data, refinedGraph, numNeighbors, new EuclideanDistanceProvider())
         fileNameR=fileName+"refined"+i
-        val edgesR=refinedGraph.flatMap({case (index, (c,neighbors)) =>
-                                                   neighbors.map({case (destination, distance) =>
-                                                                         (index, destination, math.sqrt(distance))}).toSet})
+        val edgesR=refinedGraph.flatMap({case (index, neighs) =>
+                                                   neighs.listNeighbors.map({case destPair =>
+                                                                                             (index, destPair.index, math.sqrt(destPair.distance))}).toSet})
         //TODO - Move sqrt in previous line to graph class.
         val totalElements=data.count()
         val e=edgesR.first()

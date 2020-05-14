@@ -11,7 +11,7 @@ import breeze.linalg.{DenseVector => BDV}
 
 abstract class SimpleLSHKNNGraphBuilder extends GraphBuilder
 {
-  final def computeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, hasher:Hasher, measurer:DistanceProvider):RDD[(Long, List[(Long, Double)])]=
+  final def computeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, hasher:Hasher, measurer:DistanceProvider):RDD[(Long, NeighborsForElement)]=
   {
     val totalElements=data.count()
     val bfOps:Double=totalElements*(totalElements-1)/2.0
@@ -56,7 +56,7 @@ abstract class SimpleLSHKNNGraphBuilder extends GraphBuilder
     return getGraphFromBuckets(data, hashBuckets, numNeighbors, measurer).coalesce(data.getNumPartitions)
   }
   
-  def iterativeComputeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, hasherKeyLength:Int, hasherNumTables:Int, measurer:DistanceProvider, blockSz:Option[Int], numIterations:Int, useLabelAsHashToBeProjected:Boolean=false):RDD[(Long, List[(Long, Double)])]=
+  def iterativeComputeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, hasherKeyLength:Int, hasherNumTables:Int, measurer:DistanceProvider, blockSz:Option[Int], numIterations:Int, useLabelAsHashToBeProjected:Boolean=false):RDD[(Long, NeighborsForElement)]=
   {
     println("SimpleLSHKNN - Iteration 1")
     var g=computeGraph(data, numNeighbors, hasherKeyLength, hasherNumTables, measurer, blockSz, useLabelAsHashToBeProjected)
@@ -84,7 +84,7 @@ abstract class SimpleLSHKNNGraphBuilder extends GraphBuilder
     return g
   }
   
-  def computeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, hasherKeyLength:Int, hasherNumTables:Int, measurer:DistanceProvider, blockSz:Option[Int], useLabelAsHashToBeProjected:Boolean=false):RDD[(Long, List[(Long, Double)])]
+  def computeGraph(data:RDD[(Long,LabeledPoint)], numNeighbors:Int, hasherKeyLength:Int, hasherNumTables:Int, measurer:DistanceProvider, blockSz:Option[Int], useLabelAsHashToBeProjected:Boolean=false):RDD[(Long, NeighborsForElement)]
             =computeGraph(data,
                            numNeighbors,
                            if (blockSz.isDefined)
@@ -97,14 +97,14 @@ abstract class SimpleLSHKNNGraphBuilder extends GraphBuilder
                            else new EuclideanLSHasher(data.map({case (index, point) => point.features.size}).max(), hasherKeyLength, hasherNumTables),//Get dimension from dataset
                            measurer)
                                                                                            
-  protected def getGraphFromBuckets(data:RDD[(Long,LabeledPoint)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, List[(Long, Double)])]
+  protected def getGraphFromBuckets(data:RDD[(Long,LabeledPoint)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, NeighborsForElement)]
 }
 
 class SimpleLSHLookupKNNGraphBuilder(data:RDD[(Long,LabeledPoint)]) extends SimpleLSHKNNGraphBuilder
 {
   var lookup:BroadcastLookupProvider=new BroadcastLookupProvider(data)
   
-  override def getGraphFromBuckets(data:RDD[(Long,LabeledPoint)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, List[(Long, Double)])]=
+  override def getGraphFromBuckets(data:RDD[(Long,LabeledPoint)], hashBuckets:RDD[(Hash, Iterable[Long], Int)], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, NeighborsForElement)]=
   {
     val l=lookup
     //Discard single element hashes and for the rest get every possible pairing to build graph
@@ -118,23 +118,20 @@ class SimpleLSHLookupKNNGraphBuilder(data:RDD[(Long,LabeledPoint)]) extends Simp
                          {
                            //Use a dummy grouping provider since this contemplates no groups
                            val g=BruteForceKNNGraphBuilder.computeGroupedGraph(arrayIndices, l, numNeighbors, measurer, new DummyGroupingProvider())
-                           g.map({case (id,(viewed,groupedNeighbors)) => (id, groupedNeighbors.head._2)})
+                           g.map({case (id,groupedNeighbors) => (id, groupedNeighbors.groupedNeighborLists.head._2)})
                          }
                          else
                            Nil
                          })
              //Merge neighbors found for the same element in different hash buckets
-             .reduceByKey({case (neighbors1, neighbors2) =>val newList=(neighbors1++neighbors2).toSet.toList
-                                                            if (newList.size<=numNeighbors)
-                                                              newList
-                                                            else
-                                                              newList.sortBy(_._2).take(numNeighbors)
+             .reduceByKey({case (neighbors1, neighbors2) => neighbors1.addElements(neighbors2)
+                                                            neighbors1
                            })
              .partitionBy(data.partitioner.getOrElse(new HashPartitioner(data.getNumPartitions)))
     graph
   }
   
-  override def getGroupedGraphFromIndexPairs(data:RDD[(Long,LabeledPoint)], pairs:RDD[(Long, Long)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, (BDV[Int],List[(Int,List[(Long, Double)])]))]=
+  override def getGroupedGraphFromIndexPairs(data:RDD[(Long,LabeledPoint)], pairs:RDD[(Long, Long)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, GroupedNeighborsForElementWithComparisonCount)]=
   {
     val l=lookup
     //Discard single element hashes and for the rest get every possible pairing to build graph
@@ -142,28 +139,29 @@ class SimpleLSHLookupKNNGraphBuilder(data:RDD[(Long,LabeledPoint)]) extends Simp
                                 var p1=l.lookup(i1)
                                 var p2=l.lookup(i2)
                                 val d=measurer.getDistance(p1, p2)
-                                val counts1=BDV.zeros[Int](grouper.numGroups)
-                                counts1(grouper.getGroupId(p2))+=1
-                                val counts2=BDV.zeros[Int](grouper.numGroups)
-                                counts2(grouper.getGroupId(p1))+=1
-                                List[((Long,Int),(BDV[Int],List[(Long,Double)]))](((i1,grouper.getGroupId(p2)), (counts1,List((i2, d)))),((i2,grouper.getGroupId(p1)), (counts2,List((i1, d)))))
+                                val grN1=GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper,numNeighbors)
+                                grN1.addElementOfGroup(grouper.getGroupId(p2), i2, d)
+                                val grN2=GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper,numNeighbors)
+                                grN2.addElementOfGroup(grouper.getGroupId(p1), i1, d)
+                                List[((Long,Int),GroupedNeighborsForElementWithComparisonCount)](((i1,grouper.getGroupId(p2)), grN1),((i2,grouper.getGroupId(p1)), grN2))
                             })
              //Merge neighbors found for the same element in different hash buckets
-             .reduceByKey({case ((v1,neighbors1), (v2,neighbors2)) =>
-                             (v1+v2,GraphMerger.mergeNeighborLists(neighbors1, neighbors2, numNeighbors))
+             .reduceByKey({case (neigh1, neigh2) =>
+                             neigh1.addElements(neigh2)
+                             neigh1
                            })
              .map(
                  {
-                   case ((i1,grId2),(v,neighborList)) => (i1,(v,List((grId2,neighborList))))
+                   case ((i1,grId2),neighs) => (i1,neighs)
                  }
                  )
              .reduceByKey(
                  {
-                   case ((v1,groupedNeighbors1),(v2,groupedNeighbors2)) =>
-                     (v1+v2,GraphMerger.mergeGroupedNeighbors(groupedNeighbors1, groupedNeighbors2, numNeighbors))
+                   case (neighs1, neighs2) =>
+                     neighs1.addElements(neighs2)
+                     neighs1
                  }
-                 )
-                           
+                 )         
     graph
   }
 }
