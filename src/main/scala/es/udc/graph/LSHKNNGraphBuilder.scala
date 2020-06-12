@@ -565,7 +565,7 @@ class LSHLookupKNNGraphBuilder(data:RDD[(Long,LabeledPoint)]) extends LSHKNNGrap
              .map(
                  {
                    case ((i1,grId2),neighborList) =>
-                     val grNeighs=GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper,numNeighbors)
+                     val grNeighs=GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper.getGroupIdList(),numNeighbors)
                      grNeighs.addElementsOfGroup(grId2, neighborList, neighborList.comparisons)
                      (i1,grNeighs)
                  }
@@ -589,9 +589,9 @@ class LSHLookupKNNGraphBuilder(data:RDD[(Long,LabeledPoint)]) extends LSHKNNGrap
                                 var p1=l.lookup(i1)
                                 var p2=l.lookup(i2)
                                 val d=measurer.getDistance(p1, p2)
-                                val grN1=GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper,numNeighbors)
+                                val grN1=GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper.getGroupIdList(),numNeighbors)
                                 grN1.addElementOfGroup(grouper.getGroupId(p2), i2, d)
-                                val grN2=GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper,numNeighbors)
+                                val grN2=GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper.getGroupIdList(),numNeighbors)
                                 grN2.addElementOfGroup(grouper.getGroupId(p1), i1, d)
                                 List[((Long,Int),GroupedNeighborsForElementWithComparisonCount)](((i1,grouper.getGroupId(p2)), grN1),((i2,grouper.getGroupId(p1)), grN2))
                             })

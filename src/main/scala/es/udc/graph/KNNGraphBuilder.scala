@@ -12,6 +12,8 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.regression.LabeledPoint
 import breeze.linalg.{DenseVector => BDV}
 import org.apache.spark.HashPartitioner
+import java.io.File
+import org.apache.spark.SparkContext
 
 object GraphBuilder
 {
@@ -24,6 +26,53 @@ object GraphBuilder
                                                       groupedNeighbors1
                                                     })
   }
+  
+  def readFromFiles(prefix:String, sc:SparkContext):RDD[(Long, GroupedNeighborsForElement)]=
+  {
+    //Get list of files involved
+    val dirPath=prefix.substring(0,prefix.lastIndexOf("/")+1)
+    val d = new File(dirPath)
+    val allFilesInDir=
+      if (d.exists && d.isDirectory) {
+          d.listFiles.filter(_.isFile).toList
+      } else {
+          List[File]()
+      }
+    assert(!allFilesInDir.isEmpty)
+    val matchingFiles=allFilesInDir.filter(
+        {case f =>
+            val sf=f.toPath().toString()
+            sf.length()>prefix.length() && sf.substring(0,prefix.length())==prefix &&
+            sf.endsWith(".txt")
+            })
+    val pattern=""".*c(\d+).txt""".r
+    val rdds=matchingFiles.map(
+        {case f => 
+           val fs=f.toPath().toString()
+           val groupId=fs match {case pattern(grId) => grId.toInt}
+           sc.textFile(fs)
+             .map({case line =>
+                     val parts=line.substring(1,line.length()-1).split(",")
+                     (parts(0).toLong,IndexDistancePair(parts(1).toLong,parts(2).toDouble))
+                 })
+             .groupByKey()
+             .map({case (id, nList) =>
+                         val neighs=new NeighborsForElement(nList.size)
+                         neighs.addElements(nList.toList)
+                         (id, (groupId, neighs))})
+         })
+     val fullRDD=sc.union(rdds)
+     val numNeighbors=fullRDD.map({case (id,(grId,neighs)) => neighs.listNeighbors.size}).max
+     val groupIdList=matchingFiles.map(
+        {case f => 
+           val fs=f.toPath().toString()
+           fs match {case pattern(grId) => grId.toInt}
+        })
+     fullRDD.groupByKey()
+            .map({case (id,groupedList) =>
+                      val map=scala.collection.mutable.Map(groupedList.toSeq : _*)
+                      (id, new GroupedNeighborsForElement(map,groupIdList,numNeighbors))})
+  }
 }
 
 abstract class GraphBuilder
@@ -34,11 +83,11 @@ abstract class GraphBuilder
  */
   /*private */def refineGraph(data:RDD[(Long,LabeledPoint)], g:RDD[(Long, NeighborsForElementWithComparisonCount)], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, NeighborsForElementWithComparisonCount)]=
   {
-    val graph=refineGroupedGraph(data, g.map({case (index, neighs) => (index,neighs.asGroupedWithCounts())}), numNeighbors, measurer)
+    val graph=refineGroupedGraph(data, g.map({case (index, neighs) => (index,neighs.asGroupedWithCounts())}), numNeighbors, measurer, new DummyGroupingProvider())
     return graph.map({case (i1, groupedNeighbors) => (i1, groupedNeighbors.asInstanceOf[WrappedUngroupedNeighborsForElementWithComparisonCount].unwrap())})
   }
   
-  /*private */def refineGroupedGraph(data:RDD[(Long,LabeledPoint)], g:RDD[(Long, GroupedNeighborsForElementWithComparisonCount)], numNeighbors:Int, measurer:DistanceProvider):RDD[(Long, GroupedNeighborsForElementWithComparisonCount)]=
+  /*private */def refineGroupedGraph(data:RDD[(Long,LabeledPoint)], g:RDD[(Long, GroupedNeighborsForElementWithComparisonCount)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, GroupedNeighborsForElementWithComparisonCount)]=
   {
     var pairsWithNewNeighbors:RDD[(Long, Long)]=g.flatMap(
                                               {
@@ -67,7 +116,6 @@ abstract class GraphBuilder
     val bfOps:Double=totalElements*(totalElements-1)/2.0
     val stepOps=pairsWithNewNeighbors.count()
     println("Refining step takes "+stepOps+" comparisons ("+(stepOps/bfOps)+" wrt bruteforce)")
-    val grouper=g.first()._2.grouper
     var subgraph=getGroupedGraphFromIndexPairs(data,
                                         pairsWithNewNeighbors,
                                         numNeighbors,
@@ -192,7 +240,7 @@ class NeighborsForElementWithComparisonCount(pNumNeighbors:Int, pComparisons:Int
     WrappedUngroupedNeighborsForElementWithComparisonCount.wrap(this)
 }
 
-class GroupedNeighborsForElement(pNeighbors:Map[Int,NeighborsForElement], val grouper:GroupingProvider, val numNeighbors:Int) extends Serializable
+class GroupedNeighborsForElement(pNeighbors:Map[Int,NeighborsForElement], val groupIdList:Iterable[Int], val numNeighbors:Int) extends Serializable
 {
   protected val neighbors=pNeighbors
   def groupedNeighborLists=neighbors.toList
@@ -201,7 +249,7 @@ class GroupedNeighborsForElement(pNeighbors:Map[Int,NeighborsForElement], val gr
   def numberOfGroupsWithAtLeastKElements(k:Int):Int=neighbors.values.count(_.listNeighbors.size>=k)
   def getIdsOfIncompleteGroups():List[Int]=
   {
-    grouper.getGroupIdList()
+    groupIdList
            .filter({case grId =>
                    val n=neighbors.get(grId)
                    n.isEmpty || (n.get.listNeighbors.size<n.get.numNeighbors)
@@ -237,16 +285,16 @@ class GroupedNeighborsForElement(pNeighbors:Map[Int,NeighborsForElement], val gr
   
   def wrapWithCounts(pComparisons:BDV[Int]):GroupedNeighborsForElementWithComparisonCount=
   {
-    return new GroupedNeighborsForElementWithComparisonCount(neighbors, grouper, numNeighbors, pComparisons)
+    return new GroupedNeighborsForElementWithComparisonCount(neighbors, groupIdList, numNeighbors, pComparisons)
   }
 }
 
 object GroupedNeighborsForElement
 {
-  def newEmpty(grouper:GroupingProvider, numNeighbors:Int)=new GroupedNeighborsForElement(new HashMap[Int,NeighborsForElement], grouper, numNeighbors)
+  def newEmpty(groupIdList:Iterable[Int], numNeighbors:Int)=new GroupedNeighborsForElement(new HashMap[Int,NeighborsForElement], groupIdList, numNeighbors)
 }
 
-class GroupedNeighborsForElementWithComparisonCount(pNeighbors:Map[Int,NeighborsForElement], grouper:GroupingProvider, numNeighbors:Int, pComparisons:BDV[Int]) extends GroupedNeighborsForElement(pNeighbors,grouper,numNeighbors)
+class GroupedNeighborsForElementWithComparisonCount(pNeighbors:Map[Int,NeighborsForElement], groupIdList:Iterable[Int], numNeighbors:Int, pComparisons:BDV[Int]) extends GroupedNeighborsForElement(pNeighbors,groupIdList,numNeighbors)
 {
   private var _comparisons=pComparisons
   def comparisons=_comparisons
@@ -286,8 +334,8 @@ class GroupedNeighborsForElementWithComparisonCount(pNeighbors:Map[Int,Neighbors
 
 object GroupedNeighborsForElementWithComparisonCount
 {
-  def newEmpty(grouper:GroupingProvider, numNeighbors:Int):GroupedNeighborsForElementWithComparisonCount=
-    return GroupedNeighborsForElement.newEmpty(grouper,numNeighbors).wrapWithCounts(BDV.zeros[Int](grouper.numGroups))
+  def newEmpty(groupIdList:Iterable[Int], numNeighbors:Int):GroupedNeighborsForElementWithComparisonCount=
+    return GroupedNeighborsForElement.newEmpty(groupIdList,numNeighbors).wrapWithCounts(BDV.zeros[Int](groupIdList.size))
 }
 
 object WrappedUngroupedNeighborsForElementWithComparisonCount
@@ -296,7 +344,7 @@ object WrappedUngroupedNeighborsForElementWithComparisonCount
   def wrap(n:NeighborsForElementWithComparisonCount):WrappedUngroupedNeighborsForElementWithComparisonCount=
   {
     val newElem=new WrappedUngroupedNeighborsForElementWithComparisonCount(new HashMap[Int,NeighborsForElement],
-                                                                            wrappingGrouper,
+                                                                            wrappingGrouper.getGroupIdList(),
                                                                             n.numNeighbors,
                                                                             BDV.zeros[Int](wrappingGrouper.numGroups))
     newElem.addElementsOfGroup(wrappingGrouper.DEFAULT_GROUPID, n, n.comparisons)
@@ -304,7 +352,7 @@ object WrappedUngroupedNeighborsForElementWithComparisonCount
   }
 }
 
-class WrappedUngroupedNeighborsForElementWithComparisonCount(pNeighbors:Map[Int,NeighborsForElement], grouper:GroupingProvider, numNeighbors:Int, pComparisons:BDV[Int]) extends GroupedNeighborsForElementWithComparisonCount(pNeighbors,grouper,numNeighbors,pComparisons)
+class WrappedUngroupedNeighborsForElementWithComparisonCount(pNeighbors:Map[Int,NeighborsForElement], groupIdList:Iterable[Int], numNeighbors:Int, pComparisons:BDV[Int]) extends GroupedNeighborsForElementWithComparisonCount(pNeighbors,groupIdList,numNeighbors,pComparisons)
 {
   def unwrap():NeighborsForElementWithComparisonCount=
   {

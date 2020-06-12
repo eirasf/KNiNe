@@ -20,7 +20,7 @@ object BruteForceKNNGraphBuilder
     
     //The computed distances could be stored elsewhere so that there is no symmetric repetition
     for(i <- 0 until arrayIndices.length)
-      closestNeighbors(i)=GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper,numNeighbors)
+      closestNeighbors(i)=GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper.getGroupIdList(),numNeighbors)
     
     var graph:List[(Long, GroupedNeighborsForElementWithComparisonCount)]=Nil //Graph to be returned
 
@@ -58,11 +58,11 @@ object BruteForceKNNGraphBuilder
   {
     val points2=list2.map({case index =>
                             val p=lookup.lookup(index)
-                            (index,p,grouper.getGroupId(p),GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper, numNeighbors))
+                            (index,p,grouper.getGroupId(p),GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper.getGroupIdList(), numNeighbors))
                           })
     list1.map({case index =>
               val p=lookup.lookup(index)
-              val neighs=GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper, numNeighbors)
+              val neighs=GroupedNeighborsForElementWithComparisonCount.newEmpty(grouper.getGroupIdList(), numNeighbors)
               val grId=grouper.getGroupId(p)
               for ((i2,p2,grId2,n2) <- points2)
               {
@@ -122,7 +122,7 @@ object BruteForceKNNGraphBuilder
                                            n1
                 })
             .map({case ((index,groupingId), neighbors) =>
-                                      val gr=GroupedNeighborsForElement.newEmpty(grouper,numNeighbors)
+                                      val gr=GroupedNeighborsForElement.newEmpty(grouper.getGroupIdList(),numNeighbors)
                                       gr.addElementsOfGroup(groupingId, neighbors)
                                       (index,gr)
                 })
