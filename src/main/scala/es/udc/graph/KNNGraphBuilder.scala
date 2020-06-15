@@ -29,6 +29,7 @@ object GraphBuilder
   
   def readFromFiles(prefix:String, sc:SparkContext):RDD[(Long, GroupedNeighborsForElement)]=
   {
+    println("Reading files from $prefix")
     //Get list of files involved
     val dirPath=prefix.substring(0,prefix.lastIndexOf("/")+1)
     val d = new File(dirPath)
@@ -49,7 +50,9 @@ object GraphBuilder
     val rdds=matchingFiles.map(
         {case f => 
            val fs=f.toPath().toString()
-           val groupId=fs match {case pattern(grId) => grId.toInt}
+           val groupId=fs match {case pattern(grId) => grId.toInt
+                                 case default => 0
+                                 }
            sc.textFile(fs)
              .map({case line =>
                      val parts=line.substring(1,line.length()-1).split(",")
