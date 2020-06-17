@@ -190,7 +190,7 @@ class NeighborsForElement(val numNeighbors:Int) extends Serializable
      {
        if (_maxDistance<distance)
          _maxDistance=distance
-       if ((_maxDistance!=distance) || !listNeighbors.map(_.index).contains(index))
+       if (!listNeighbors.map(_.index).contains(index))
          _listNeighbors=IndexDistancePair(index, distance) :: listNeighbors
      }
      else //Already have enough neighbors
