@@ -29,7 +29,7 @@ object GraphBuilder
   
   def readFromFiles(prefix:String, sc:SparkContext):RDD[(Long, GroupedNeighborsForElement)]=
   {
-    println("Reading files from $prefix")
+    println(s"Reading files from $prefix")
     //Get list of files involved
     val dirPath=prefix.substring(0,prefix.lastIndexOf("/")+1)
     val d = new File(dirPath)
@@ -60,16 +60,23 @@ object GraphBuilder
                  })
              .groupByKey()
              .map({case (id, nList) =>
+                         println(s"Lista de #${nList.size}")
                          val neighs=new NeighborsForElement(nList.size)
                          neighs.addElements(nList.toList)
+                         println(s"Neighs de #${neighs.listNeighbors.size}")
                          (id, (groupId, neighs))})
          })
-     val fullRDD=sc.union(rdds)
+     val fullRDD=if (rdds.size>1)
+                   sc.union(rdds)
+                 else
+                   rdds(0)
+     println(fullRDD.count())
      val numNeighbors=fullRDD.map({case (id,(grId,neighs)) => neighs.listNeighbors.size}).max
      val groupIdList=matchingFiles.map(
         {case f => 
            val fs=f.toPath().toString()
-           fs match {case pattern(grId) => grId.toInt}
+           fs match {case pattern(grId) => grId.toInt
+                     case default => 0}
         })
      fullRDD.groupByKey()
             .map({case (id,groupedList) =>
@@ -183,9 +190,8 @@ class NeighborsForElement(val numNeighbors:Int) extends Serializable
      {
        if (_maxDistance<distance)
          _maxDistance=distance
-       else
-         if ((_maxDistance!=distance) || !listNeighbors.map(_.index).contains(index))
-           _listNeighbors=IndexDistancePair(index, distance) :: listNeighbors 
+       if ((_maxDistance!=distance) || !listNeighbors.map(_.index).contains(index))
+         _listNeighbors=IndexDistancePair(index, distance) :: listNeighbors
      }
      else //Already have enough neighbors
      {
