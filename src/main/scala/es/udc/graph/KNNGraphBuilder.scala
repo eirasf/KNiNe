@@ -60,10 +60,8 @@ object GraphBuilder
                  })
              .groupByKey()
              .map({case (id, nList) =>
-                         println(s"Lista de #${nList.size}")
                          val neighs=new NeighborsForElement(nList.size)
                          neighs.addElements(nList.toList)
-                         println(s"Neighs de #${neighs.listNeighbors.size}")
                          (id, (groupId, neighs))})
          })
      val fullRDD=if (rdds.size>1)
