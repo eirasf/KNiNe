@@ -26,7 +26,7 @@ object GraphBuilder
                                                       groupedNeighbors1
                                                     })
   }
-  
+
   def readFromFiles(prefix:String, sc:SparkContext):RDD[(Long, GroupedNeighborsForElement)]=
   {
     println(s"Reading files from $prefix")
@@ -48,7 +48,7 @@ object GraphBuilder
             })
     val pattern=""".*c(\d+).txt""".r
     val rdds=matchingFiles.map(
-        {case f => 
+        {case f =>
            val fs=f.toPath().toString()
            val groupId=fs match {case pattern(grId) => grId.toInt
                                  case default => 0
@@ -71,7 +71,7 @@ object GraphBuilder
      println(fullRDD.count())
      val numNeighbors=fullRDD.map({case (id,(grId,neighs)) => neighs.listNeighbors.size}).max
      val groupIdList=matchingFiles.map(
-        {case f => 
+        {case f =>
            val fs=f.toPath().toString()
            fs match {case pattern(grId) => grId.toInt
                      case default => 0}
@@ -94,7 +94,7 @@ abstract class GraphBuilder
     val graph=refineGroupedGraph(data, g.map({case (index, neighs) => (index,neighs.asGroupedWithCounts())}), numNeighbors, measurer, new DummyGroupingProvider())
     return graph.map({case (i1, groupedNeighbors) => (i1, groupedNeighbors.asInstanceOf[WrappedUngroupedNeighborsForElementWithComparisonCount].unwrap())})
   }
-  
+
   /*private */def refineGroupedGraph(data:RDD[(Long,LabeledPoint)], g:RDD[(Long, GroupedNeighborsForElementWithComparisonCount)], numNeighbors:Int, measurer:DistanceProvider, grouper:GroupingProvider):RDD[(Long, GroupedNeighborsForElementWithComparisonCount)]=
   {
     var pairsWithNewNeighbors:RDD[(Long, Long)]=g.flatMap(
@@ -135,7 +135,7 @@ abstract class GraphBuilder
 }
 
 case class IndexDistancePair(var index: Long, var distance: Double)
-  
+
 object NeighborsForElement
 {
   def merge(n1:NeighborsForElement, n2:NeighborsForElement):NeighborsForElement=
@@ -143,9 +143,9 @@ object NeighborsForElement
     val maxNeighbors=math.max(n1.numNeighbors, n2.numNeighbors)
     var sNeighbors1=n1.listNeighbors.sortBy(_.distance)
     var sNeighbors2=n2.listNeighbors.sortBy(_.distance)
-    
+
     var finalNeighbors:List[IndexDistancePair]=Nil
-    
+
     while(finalNeighbors.size<maxNeighbors && (!sNeighbors1.isEmpty || !sNeighbors2.isEmpty))
     {
       if (sNeighbors2.isEmpty || (!sNeighbors1.isEmpty && sNeighbors1.head.distance<sNeighbors2.head.distance))
@@ -161,7 +161,7 @@ object NeighborsForElement
         sNeighbors2=sNeighbors2.tail
       }
     }
-    
+
     val newElem=new NeighborsForElement(maxNeighbors)
     newElem.setListNeighbors(finalNeighbors)
     return newElem
@@ -181,7 +181,7 @@ class NeighborsForElement(val numNeighbors:Int) extends Serializable
       if (n.distance>_maxDistance)
                _maxDistance=n.distance
   }
-  
+
   def addElement(index:Long, distance:Double):Unit=
   {
     if (listNeighbors.size<numNeighbors)
@@ -222,7 +222,7 @@ class NeighborsForElement(val numNeighbors:Int) extends Serializable
       this.addElement(p.index, p.distance)
   }
   def addElements(n:NeighborsForElement):Unit=addElements(n.listNeighbors)
-  
+
   def wrapWithCount(pComparisons:Int):NeighborsForElementWithComparisonCount=
   {
     val newN=new NeighborsForElementWithComparisonCount(numNeighbors, pComparisons)
@@ -234,7 +234,7 @@ class NeighborsForElement(val numNeighbors:Int) extends Serializable
 class NeighborsForElementWithComparisonCount(pNumNeighbors:Int, pComparisons:Int) extends NeighborsForElement(pNumNeighbors)
 {
   def this(pNumNeighbors:Int)=this(pNumNeighbors,0)
-  
+
   private var _comparisons=pComparisons
   def comparisons=_comparisons
   def addElements(n:NeighborsForElementWithComparisonCount):Unit=
@@ -242,7 +242,7 @@ class NeighborsForElementWithComparisonCount(pNumNeighbors:Int, pComparisons:Int
     super.addElements(n)
     _comparisons+=n.comparisons
   }
-  
+
   def asGroupedWithCounts()=
     WrappedUngroupedNeighborsForElementWithComparisonCount.wrap(this)
 }
@@ -263,13 +263,13 @@ class GroupedNeighborsForElement(pNeighbors:Map[Int,NeighborsForElement], val gr
                 })
            .toList
   }
-  
+
   def addElements(n:GroupedNeighborsForElement):Unit=
   {
     for ((k,v) <- n.neighbors)
       addElementsOfGroup(k,v)
   }
-  
+
   private def getOrCreateGroup(groupId:Int):NeighborsForElement=
   {
     val g=neighbors.get(groupId)
@@ -278,18 +278,18 @@ class GroupedNeighborsForElement(pNeighbors:Map[Int,NeighborsForElement], val gr
     neighbors(groupId)=newGroup
     return newGroup
   }
-  
+
   def addElementsOfGroup(groupId:Int, n:NeighborsForElement):Unit=
   {
-    
+
     getOrCreateGroup(groupId).addElements(n)
   }
-  
+
   def addElementOfGroup(groupId:Int, index:Long, distance:Double):Unit=
   {
     getOrCreateGroup(groupId).addElement(index, distance)
   }
-  
+
   def wrapWithCounts(pComparisons:BDV[Int]):GroupedNeighborsForElementWithComparisonCount=
   {
     return new GroupedNeighborsForElementWithComparisonCount(neighbors, groupIdList, numNeighbors, pComparisons)
@@ -305,7 +305,7 @@ class GroupedNeighborsForElementWithComparisonCount(pNeighbors:Map[Int,Neighbors
 {
   private var _comparisons=pComparisons
   def comparisons=_comparisons
-  
+
   def neighborsWithComparisonCountOfGroup(grId:Int):Option[NeighborsForElementWithComparisonCount]=
   {
     val neighs=super.neighborsOfGroup(grId)
@@ -313,25 +313,25 @@ class GroupedNeighborsForElementWithComparisonCount(pNeighbors:Map[Int,Neighbors
       return None
     return Some(neighs.get.wrapWithCount(comparisons(grId)))
   }
-  
+
   def getIdsOfGroupsWithAtLeastKComparisons(k:Int):List[Int]=
     comparisons.valuesIterator.zipWithIndex.filter(_._1>=k).map(_._2).toList
-    
+
   def getIdsOfGroupsWithLessThanKComparisons(k:Int):List[Int]=
     comparisons.valuesIterator.zipWithIndex.filter(_._1<k).map(_._2).toList
-  
+
   def addElements(n:GroupedNeighborsForElementWithComparisonCount):Unit=
   {
     super.addElements(n)
     _comparisons+=n.comparisons
   }
-  
+
   def addElementsOfGroup(groupId:Int, n:NeighborsForElement, pComparisons:Int):Unit=
   {
     super.addElementsOfGroup(groupId,n)
     _comparisons(groupId)+=pComparisons
   }
-  
+
   override def addElementOfGroup(groupId:Int, index:Long, distance:Double):Unit=
   {
     super.addElementOfGroup(groupId,index,distance)

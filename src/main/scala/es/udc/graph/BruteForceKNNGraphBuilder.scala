@@ -11,6 +11,7 @@ import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.regression.LabeledPoint
 import breeze.linalg.{DenseVector => BDV}
+import org.scalatest.Assertions
 
 object BruteForceKNNGraphBuilder
 {
@@ -26,6 +27,7 @@ object BruteForceKNNGraphBuilder
 
     for(i <- 0 until arrayIndices.length)
     {
+      assert(arrayIndices(i)>=0)
       for(j <- i+1 until arrayIndices.length)
       {
          if (measurer==null)
@@ -34,6 +36,13 @@ object BruteForceKNNGraphBuilder
            println("NULL lookup")
          if (arrayIndices==null)
            println("NULL arrayIndices")
+         if (arrayIndices(i)<0)
+           println(s"CHECK ERROR!!!! arrayIndices(i)=${arrayIndices(i)}")
+         if (arrayIndices(j)<0)
+           println(s"CHECK ERROR!!!! arrayIndices(i)=${arrayIndices(j)}")
+           
+         assert((arrayIndices(i)>=0) && (arrayIndices(j)>=0)) 
+         
          val d=measurer.getDistance(lookup.lookup(arrayIndices(i)),
                                      lookup.lookup(arrayIndices(j)))
          
@@ -46,6 +55,7 @@ object BruteForceKNNGraphBuilder
          
          closestNeighbors(i).addElementOfGroup(grIdY, arrayIndices(j), d)
          closestNeighbors(j).addElementOfGroup(grIdX, arrayIndices(i), d)
+         
       }
       
       graph = (arrayIndices(i),closestNeighbors(i)) :: graph
