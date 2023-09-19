@@ -34,3 +34,8 @@ Options:
     -b    blockSz (fastKNN only) (default: 100)
     
     -i    iterations (fastKNN only) (default: 1)
+
+## Reference
+
+Eiras-Franco, C., Martínez-Rego, D., Kanthan, L., Piñeiro, C., Bahamonde, A., Guijarro-Berdiñas, B., & Alonso-Betanzos, A. (2020). Fast Distributed k NN Graph Construction Using Auto-tuned Locality-sensitive Hashing. ACM Transactions on Intelligent Systems and Technology (TIST), 11(6), 1-18.
+[https://doi.org/10.1145/3408889](https://doi.org/10.1145/3408889)
